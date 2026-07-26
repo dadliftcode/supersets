@@ -1,0 +1,7 @@
+interface:
+  display_name: "Architecture Decision Records"
+  short_description: "Capture whats and whys of major architecture decisions."
+  default_prompt: "Write an architecture decision record for this decision."
+
+policy:
+  allow_implicit_invocation: true
