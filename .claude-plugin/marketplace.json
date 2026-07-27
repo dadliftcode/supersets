@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "dadliftcode",
+  "description": "Agent skills maintained by DadLiftCode.",
+  "owner": {
+    "name": "Rami Massoud",
+    "url": "https://www.ramimassoud.com/"
+  },
+  "plugins": [
+    {
+      "name": "supersets",
+      "source": "./",
+      "description": "Battle-tested agent skills for strong software engineering.",
+      "strict": true,
+      "author": {
+        "name": "Rami Massoud",
+        "url": "https://www.ramimassoud.com/"
+      }
+    }
+  ]
+}

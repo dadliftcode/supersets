@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "supersets",
+  "displayName": "Supersets",
+  "version": "0.1.0",
+  "description": "Battle-tested agent skills for strong software engineering.",
+  "author": {
+    "name": "Rami Massoud",
+    "url": "https://www.ramimassoud.com/"
+  },
+  "homepage": "https://github.com/dadliftcode/supersets",
+  "repository": "https://github.com/dadliftcode/supersets",
+  "license": "MIT",
+  "keywords": [
+    "agent-skills",
+    "software-engineering",
+    "architecture",
+    "git"
+  ]
+}
