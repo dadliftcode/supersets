@@ -2,6 +2,18 @@
 
 Battle-tested agent skills for strong software engineering.
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/supersets-logo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/supersets-logo-light.png">
+    <img
+      alt="A coding robot bench-pressing a barbell above the Supersets wordmark"
+      src="assets/supersets-logo-light.png"
+      width="520"
+    >
+  </picture>
+</p>
+
 ## Included skills
 
 - [`writing-architecture-decision-records`](skills/writing-architecture-decision-records/SKILL.md) decides whether an architectural choice warrants an ADR, writes it, and preserves history when an accepted decision is superseded.

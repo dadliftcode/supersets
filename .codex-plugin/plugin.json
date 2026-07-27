@@ -1,6 +1,6 @@
 {
   "name": "supersets",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Battle-tested agent skills for strong software engineering.",
   "author": {
     "name": "Rami Massoud",
@@ -31,6 +31,8 @@
       "Write a clear commit message for these changes.",
       "Decide whether this architecture choice needs an ADR.",
       "Write or supersede an architecture decision record."
-    ]
+    ],
+    "brandColor": "#F59E0B",
+    "logo": "./assets/supersets-logo-light.png"
   }
 }
