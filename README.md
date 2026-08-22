@@ -35,6 +35,18 @@ claude plugin marketplace add dadliftcode/supersets
 claude plugin install supersets@dadliftcode
 ```
 
+### OpenCode
+
+Add the plugin to `opencode.json` (global or project):
+
+```json
+{
+  "plugin": ["supersets@git+https://github.com/dadliftcode/supersets.git"]
+}
+```
+
+Quit and restart OpenCode. Config is not hot-reloaded.
+
 ## Development
 
 Supersets is a source-only plugin, so there is no build step. Validate the
@@ -45,37 +57,47 @@ ruby -rjson -e 'ARGV.each { |file| JSON.parse(File.read(file)) }' \
   .codex-plugin/plugin.json \
   .claude-plugin/plugin.json \
   .agents/plugins/marketplace.json \
-  .claude-plugin/marketplace.json
+  .claude-plugin/marketplace.json \
+  package.json
 
 ruby -rjson -e 'versions = ARGV.map { |file| JSON.parse(File.read(file)).fetch("version") }; abort "version mismatch: #{versions.join(" != ")}" unless versions.uniq.one?' \
   .codex-plugin/plugin.json \
-  .claude-plugin/plugin.json
+  .claude-plugin/plugin.json \
+  package.json
 
 claude plugin validate . --strict
 
 python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/plugin-creator/scripts/validate_plugin.py" .
+
+node --test tests/opencode-plugin.test.mjs
 ```
 
-Before tagging a release, smoke-test the checkout through both real hosts:
+Before tagging a release, smoke-test the checkout through both real hosts
+and OpenCode:
 
 1. Add this checkout as a local marketplace and install
    `supersets@dadliftcode` in Codex and Claude Code.
-2. Start a fresh session in each host and confirm both included skills are
+2. Point a user/global `plugin` entry at this checkout in OpenCode
+   (`supersets@git+file://$PWD` or
+   `file://$PWD/.opencode/plugins/supersets.js`). Do not commit
+   `opencode.json`.
+3. Start a fresh session in each host and confirm both included skills are
    discoverable.
-3. In each host, exercise the commit-writing skill on staged changes. Exercise
-   the ADR skill on a consequential choice, a choice that does not warrant an
-   ADR, and an accepted ADR that must be superseded without erasing history.
+4. In Codex and Claude Code, exercise the commit-writing skill on staged
+   changes. Exercise the ADR skill on a consequential choice, a choice that
+   does not warrant an ADR, and an accepted ADR that must be superseded
+   without erasing history.
 
 ## Releases
 
 Supersets follows [Semantic Versioning](https://semver.org/). The release
-version appears in both plugin manifests and must match; marketplace entries
-do not duplicate it.
+version appears in both plugin manifests and `package.json` and must match;
+marketplace entries do not duplicate it.
 
-For each release, update both manifests in the same commit, run the validation
-commands above, tag that commit as `vX.Y.Z`, and publish matching GitHub release
-notes. The repository tree is the release artifact; do not generate or commit
-a separate build.
+For each release, update both manifests and `package.json` in the same
+commit, run the validation commands above, tag that commit as `vX.Y.Z`,
+and publish matching GitHub release notes. The repository tree is the
+release artifact; do not generate or commit a separate build.
 
 ## License
 
