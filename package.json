@@ -1,0 +1,8 @@
+{
+  "name": "supersets",
+  "version": "0.1.1",
+  "description": "Battle-tested agent skills for strong software engineering.",
+  "type": "module",
+  "main": ".opencode/plugins/supersets.js",
+  "license": "MIT"
+}
