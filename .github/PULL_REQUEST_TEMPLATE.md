@@ -19,6 +19,6 @@
 
 <!-- Migrations, flags, or version bumps that affect existing installs. Write "none" if none apply. -->
 
-## Test Plan
+## Tests
 
-- [ ]
+<!-- Cases you already ran, and what each one did. Not a list of things the reviewer should try. -->
