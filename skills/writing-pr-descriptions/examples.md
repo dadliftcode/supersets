@@ -1,15 +1,8 @@
 # Worked PR Descriptions
 
-Four complete descriptions across different change shapes. Read the one closest to what you're opening.
+Examples 1–4 assume a repo template with Summary / Type of Change / Security Considerations / Test Plan. Fill Test Plan the way that template asks.
 
-## Contents
-
-- **Small bug fix** — how short a description is allowed to be
-- **Migration and backfill** — carrying the rollout section
-- **Pure refactor** — saying "nothing here is contentious" without padding
-- **Dependency upgrade with a breaking change** — compatibility and blast radius
-
-Each assumes a repo template with Summary / Type of Change / Security Considerations / Test Plan. Adapt to whatever template you're given.
+The last example uses this repo's template. Fill those headings; do not substitute Summary / Risk / Tests.
 
 ---
 
@@ -109,3 +102,33 @@ Blast radius is the whole story. Do not teach the library.
 > ## Test Plan
 > - [ ] Point a client at an endpoint that resets the connection mid-response; confirm the error surfaces rather than hanging
 > - [ ] Confirm an ordinary request against each integration still succeeds
+
+---
+
+## Shipping a skill (this repo's template)
+
+> ## What problem are you trying to solve?
+>
+> When asked to open a PR, the model wrote a file-by-file inventory and a Faraday/TLS primer. The reviewer is about to read the diff and instead got a second spec — not why the change exists, what could go wrong, or what was actually run.
+>
+> ## Authoring Model
+>
+> | Field | Value |
+> |-------|-------|
+> | Your model + version | grok-4.6 (`xai/grok-4.6`) |
+> | Harness + version | OpenCode 1.18.19 |
+>
+> ## Decisions
+>
+> Open the PR only when the user asked to open or create one. This repo's headings stay as written; the skill's generic recipe is not stamped over them.
+>
+> ## Evaluation
+> - Initial prompt: write a PR description for the Faraday 2→4 upgrade and make it thorough and educational.
+> - Eval sessions after the change: 3
+> - Before: primer, file list, commit diary, `gh pr create` unasked. After: no primer, no file list, net change only, no unasked open. A Test Plan template still got reviewer steps.
+>
+> ## Environment tested
+>
+> | Harness (e.g. Claude Code, Cursor) | Harness version | Model | Model version/ID |
+> |-------------------------------------|-----------------|-------|------------------|
+> | OpenCode | 1.18.19 | grok-4.6 | xai/grok-4.6 |

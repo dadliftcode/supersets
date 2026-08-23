@@ -1,7 +1,7 @@
 interface:
   display_name: "Pull Request Descriptions"
-  short_description: "Reviewer-aid PR descriptions, then open the PR."
-  default_prompt: "Write a pull request description for these changes and open the PR."
+  short_description: "Reviewer-aid PR descriptions. Open the PR only if asked."
+  default_prompt: "Write a pull request description for these changes."
 
 policy:
   allow_implicit_invocation: true

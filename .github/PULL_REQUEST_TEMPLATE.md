@@ -1,20 +1,37 @@
-## Summary
+## What problem are you trying to solve?
+<!-- What prompted this change? If this came from a session,
+     include: what you were doing, what went wrong, the model's
+     exact failure mode.
 
-<!-- 1–3 sentences. What this makes possible or fixes, and why.
-     Net change versus the base, not the commit timeline. -->
+     "Improving" something is not a problem statement. What broke? What
+     failed? What was the user experience that motivated this? -->
+
+## Authoring Model
+
+<!-- Who wrote the change. Not where you evaluated it. Required. -->
+
+| Field | Value |
+|-------|-------|
+| Your model + version | |
+| Harness + version | |
 
 ## Decisions
 
-<!-- Choices the ticket did not dictate. Write "none" if nothing was contentious. -->
+<!-- Choices weighed and made during development. Write "none" if nothing was contentious. -->
 
-## Risk
+## Evaluation
+- What was the initial prompt you (or your human partner) used to start
+  the session that led to this change?
+- How many eval sessions did you run AFTER making the change?
+- How did outcomes change compared to before the change?
 
-<!-- What could go wrong, and what bounds it. Uncertainties you could not cheaply check. -->
+<!-- "It works" is not evaluation. Describe the before/after difference
+     you observed across multiple sessions. -->
 
-## Rollout
+## Environment tested
 
-<!-- Migrations, flags, or version bumps that affect existing installs. Write "none" if none apply. -->
+<!-- Where you evaluated, not who authored. -->
 
-## Tests
-
-<!-- Cases you already ran, and what each one did. Not a list of things the reviewer should try. -->
+| Harness (e.g. Claude Code, Cursor) | Harness version | Model | Model version/ID |
+|-------------------------------------|-----------------|-------|------------------|
+|                                     |                 |       |                  |
