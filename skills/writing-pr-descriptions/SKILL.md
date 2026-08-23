@@ -1,6 +1,6 @@
 ---
 name: writing-pr-descriptions
-description: Use when opening a pull request or merge request, writing or revising a PR description, filling in a repository's PR template, sampling recent PRs because no template exists, offering a PR template, or running gh pr create / glab mr create.
+description: Use when opening a pull request or merge request, writing or revising a PR description, filling in a repository's PR template, sampling recent PRs because no template exists, offering a PR template, running gh pr create / glab mr create, or when a multi-commit branch tempts a timeline-style description.
 license: MIT
 ---
 
@@ -32,8 +32,9 @@ Opening or revising a pull request or merge request; filling a repo template; no
 Do this before writing a word:
 
 1. **The change.** Branch, merge base, and the real diff — not memory of the conversation.
-2. **A template.** Look for `.github/PULL_REQUEST_TEMPLATE.md`, `.github/PULL_REQUEST_TEMPLATE/*.md`, `PULL_REQUEST_TEMPLATE.md`, `.gitlab/merge_request_templates/`. Template sections win.
-3. **No template.** Sample 5–8 recently merged PRs (`gh pr list --state merged --limit 8` then `gh pr view`; or `glab`). Keep the patterns that actually help a reviewer. Drop file lists, library primers, and repeated CI recap. Write *this* description to that shape.
+2. **The commits.** `git log <base>..HEAD`. Recover why, and any approach you dropped. The description is the net change versus the base, not a timeline of the branch.
+3. **A template.** Look for `.github/PULL_REQUEST_TEMPLATE.md`, `.github/PULL_REQUEST_TEMPLATE/*.md`, `PULL_REQUEST_TEMPLATE.md`, `.gitlab/merge_request_templates/`. Template sections win.
+4. **No template.** Sample 5–8 recently merged PRs (`gh pr list --state merged --limit 8` then `gh pr view`; or `glab`). Keep the patterns that actually help a reviewer. Drop file lists, library primers, and repeated CI recap. Write *this* description to that shape.
 
 Do not invent a house style from first principles when history is one command away.
 
@@ -103,7 +104,7 @@ Every sentence after orientation should answer one of these:
 - what evidence shows it behaves correctly
 - what has to happen safely at rollout
 
-A sentence answering none of them is inventory — cut it. **Group by concern, never file-by-file.** A "Changes:" list enumerating files is the diff with extra steps.
+A sentence answering none of them is inventory — cut it. **Group by concern, never file-by-file or commit-by-commit.** A "Changes:" list enumerating files is the diff with extra steps. A "First I… then I…" recap is the branch diary.
 
 Concrete values stay when they *define* the risk or the contract — a default, a cap, an expiry. Cut the ones that merely narrate.
 
@@ -132,6 +133,7 @@ For complete descriptions across different change shapes, see [examples.md](exam
 | Mistake | Instead |
 |---|---|
 | Listing what each file or function does | Why this approach, and what it costs |
+| Narrating the commit timeline | The net change versus the base |
 | Teaching the library or protocol | The decision or risk that is *not* in the docs |
 | Mechanism under a security heading | What could go wrong, and what bounds it |
 | The same facts in two sections | Say it once, in the section that owns it |
@@ -149,6 +151,7 @@ For complete descriptions across different change shapes, see [examples.md](exam
 ## Red Flags — Stop and Cut
 
 - File-by-file or function-by-function narration
+- "First I… then I… finally I…"
 - A primer on a library the team already uses
 - "Complete" meaning long
 - A sentence that needs to be read twice
