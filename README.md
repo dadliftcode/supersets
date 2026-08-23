@@ -18,6 +18,7 @@ Battle-tested agent skills for strong software engineering.
 
 - [`writing-architecture-decision-records`](skills/writing-architecture-decision-records/SKILL.md) decides whether an architectural choice warrants an ADR, writes it, and preserves history when an accepted decision is superseded.
 - [`writing-commits`](skills/writing-commits/SKILL.md) writes clear Git commit messages for future readers.
+- [`writing-pr-descriptions`](skills/writing-pr-descriptions/SKILL.md) writes reviewer-aid pull request descriptions and opens the PR.
 
 ## Install
 
@@ -81,12 +82,15 @@ and OpenCode:
    (`supersets@git+file://$PWD` or
    `file://$PWD/.opencode/plugins/supersets.js`). Do not commit
    `opencode.json`.
-3. Start a fresh session in each host and confirm both included skills are
+3. Start a fresh session in each host and confirm all included skills are
    discoverable.
 4. In Codex and Claude Code, exercise the commit-writing skill on staged
    changes. Exercise the ADR skill on a consequential choice, a choice that
    does not warrant an ADR, and an accepted ADR that must be superseded
-   without erasing history.
+   without erasing history. Exercise the PR-description skill on a branch
+   that is ready to open: with a repo template, and in a repo that has none
+   (sample recent PRs, write this description, offer a template, do not
+   write the template file unless asked).
 
 ## Releases
 
