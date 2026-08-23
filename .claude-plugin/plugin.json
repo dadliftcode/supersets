@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "supersets",
   "displayName": "Supersets",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Battle-tested agent skills for strong software engineering.",
   "author": {
     "name": "Rami Massoud",

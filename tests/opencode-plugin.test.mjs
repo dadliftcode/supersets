@@ -27,17 +27,16 @@ test('registers only the config hook', async () => {
   assert.deepEqual(Object.keys(hooks), ['config'])
 })
 
-test('skills directory contains both shipped skills', () => {
-  assert.ok(
-    fs.existsSync(path.join(skillsDir, 'writing-commits', 'SKILL.md')),
-  )
-  assert.ok(
-    fs.existsSync(
-      path.join(
-        skillsDir,
-        'writing-architecture-decision-records',
-        'SKILL.md',
-      ),
-    ),
-  )
+test('skills directory contains all shipped skills', () => {
+  const shipped = [
+    'writing-commits',
+    'writing-architecture-decision-records',
+    'writing-pr-descriptions',
+  ]
+  for (const skill of shipped) {
+    assert.ok(
+      fs.existsSync(path.join(skillsDir, skill, 'SKILL.md')),
+      `missing skill: ${skill}`,
+    )
+  }
 })
