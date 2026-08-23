@@ -10,7 +10,7 @@ license: MIT
 
 A PR description is a **reviewer aid**. The reviewer is about to read the code. Anything the diff already shows, or that a typical engineer working in this stack already knows, is a tax they pay before the hard part.
 
-**Core principle: the diff shows what changed. The description carries what the diff cannot** — why it exists, what could go wrong, where to look, what happens at rollout. It also outlives the review, so it should still make sense to someone who never opens the diff.
+**Core principle: the diff shows what changed. The description carries what the diff cannot** — why it exists, what could go wrong, what happens at rollout. It also outlives the review, so it should still make sense to someone who never opens the diff.
 
 **Density:** as brief as the change allows. Every sentence must be load-bearing. The description should feel like a relief to read, not a second spec.
 
@@ -50,7 +50,6 @@ Cover these four. They are a **checklist, not a schema**. A repo template usuall
 - **Decisions:** choices the ticket did not dictate
 - **Uncertainty:** what you could not verify — *after* resolving whatever was cheap to check
 - **Scope:** anything beyond the ticket, offered for cutting
-- **Where to look hardest**, and why
 
 If nothing here is genuinely contentious, say so in a line. Do not manufacture controversy, and do not invent alternatives you never weighed.
 
@@ -104,7 +103,7 @@ Every sentence after orientation should answer one of these:
 - what evidence shows it behaves correctly
 - what has to happen safely at rollout
 
-A sentence answering none of them is inventory — cut it. **Group by concern, never file-by-file or commit-by-commit.** A "Changes:" list enumerating files is the diff with extra steps. A "First I… then I…" recap is the branch diary.
+A sentence answering none of them is inventory — cut it. **Group by concern, never file-by-file or commit-by-commit.** A "Changes:" list enumerating files is the diff with extra steps. So is "look at `foo.rb`" — the review UI already lists the files. A "First I… then I…" recap is the branch diary.
 
 Concrete values stay when they *define* the risk or the contract — a default, a cap, an expiry. Cut the ones that merely narrate.
 

@@ -31,7 +31,7 @@ Most changes are this size. Resist inflating them.
 > - [ ] Set your profile timezone to UTC-8, export a report containing a row created at 23:30 UTC, confirm the row shows the previous local date
 > - [ ] Confirm a viewer in UTC still sees the original date
 
-No risk section, no rollout, no "where to look". Nothing was contentious, so nothing is claimed to be.
+No risk section, no rollout. Nothing was contentious, so nothing is claimed to be.
 
 ---
 
@@ -95,7 +95,7 @@ Blast radius is the whole story. Do not teach the library.
 >
 > Upgrades the HTTP client from 2.x to 4.x to pick up the fix for the request-smuggling advisory. 3.x was skipped; it's already unsupported.
 >
-> 4.x drops implicit retries on connection reset — 2.x retried these silently, so anything relying on that now surfaces the error. I found four call sites and made retries explicit; the risk is a fifth I missed, which would show up as a new intermittent error rather than a test failure. The integration clients are the place to look hardest.
+> 4.x drops implicit retries on connection reset — 2.x retried these silently, so anything relying on that now surfaces the error. I found four call sites and made retries explicit; the risk is a fifth I missed, which would show up as a new intermittent error rather than a test failure.
 >
 > ## Type of Change
 > - [x] Maintenance
