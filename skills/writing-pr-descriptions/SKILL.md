@@ -14,6 +14,13 @@ A PR description is a **reviewer aid**. The reviewer is about to read the code. 
 
 **Density:** as brief as the change allows. Every sentence must be load-bearing. The description should feel like a relief to read, not a second spec.
 
+**Plain language:** write so a tired reviewer cannot misread it.
+
+- One idea per sentence. Keep sentences short.
+- Active voice. Name who does the thing.
+- One word per meaning. Use the same term for the same thing; pick the plainer word when two words mean the same.
+- If a clause is only there to sound careful, cut it.
+
 ## When to Use
 
 Opening or revising a pull request or merge request; filling a repo template; no template and you need to infer what helps from recent PRs; asked to create or improve `PULL_REQUEST_TEMPLATE.md`.
@@ -134,6 +141,7 @@ For complete descriptions across different change shapes, see [examples.md](exam
 | Every choice presented as settled | The two you'd like challenged |
 | Unrequested work, unmentioned | Name it, and offer to cut it |
 | Flagging what you could have checked | Resolve the cheap ones, flag the rest |
+| Long sentences, passives, synonym-hopping | One idea, active voice, one word per thing |
 | Padding a template to look thorough | The template's own answer for an empty section |
 | Skipping past PRs because there is no template | Sample them, then offer a template |
 | Writing the description and stopping | Open the PR |
@@ -143,6 +151,7 @@ For complete descriptions across different change shapes, see [examples.md](exam
 - File-by-file or function-by-function narration
 - A primer on a library the team already uses
 - "Complete" meaning long
+- A sentence that needs to be read twice
 - Past PRs unread when no template exists
 - Description written, PR not opened
 - A template file added without being asked
