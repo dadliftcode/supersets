@@ -218,6 +218,24 @@ test('rejects an addendum attributed to another author', (t) => {
   assert.match(addendum.stderr, /from does not match --author/)
 })
 
+test('prints a body template without touching the drop-box', (t) => {
+  const directory = chatDirectory(t)
+  const result = runTurn(['--print-body-template', '--kind', 'finding'])
+
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /Verdict: accepted \/ rejected \/ accepted-with-correction/)
+  assert.match(result.stdout, /Authority checked/)
+  assert.doesNotMatch(result.stdout, /^---/)
+  assert.deepEqual(markdownFiles(directory), [])
+})
+
+test('requires --kind for --print-body-template', (t) => {
+  const result = runTurn(['--print-body-template'])
+
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /--kind is required with --print-body-template/)
+})
+
 test('appends the required closure sentence', (t) => {
   const directory = chatDirectory(t)
   const body = writeBody(directory, 'closure.txt', 'All findings are resolved. Tests pass.\n')

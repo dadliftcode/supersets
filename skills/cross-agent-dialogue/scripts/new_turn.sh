@@ -9,17 +9,42 @@ usage: new_turn.sh --dir DIR --thread SLUG --author NAME --kind KIND \
          (--initial | --responding-to FILE | --addendum-to FILE) \
          [--closes SLUG] --title TITLE --body-file FILE
 
+       new_turn.sh --print-body-template --kind KIND
+
   KIND is one of: ask, proposal, finding, answer, closure
   --closes SLUG is required when --kind closure, and disallowed otherwise
   --body-file is required; use - to read the body from stdin
+  --print-body-template prints the placeholder shape for KIND to stdout and
+    exits; it writes nothing to any drop-box. Never publish that output
+    verbatim as a turn's body — fill it in first.
   SLUG and NAME must be lowercase letters, digits, and hyphens
 USAGE
   exit 2
 }
 
+body_template() {
+  case "$1" in
+    ask|proposal)
+      printf '<!-- Question or idea. -->\n\n'
+      printf '<!-- Claims, each tagged: verified: path:line / inferred: / assumed: -->\n\n'
+      printf '<!-- What you ruled out, and how. -->\n\n'
+      printf '<!-- What evidence would change your mind. -->\n'
+      ;;
+    finding|answer)
+      printf '<!-- Verdict: accepted / rejected / accepted-with-correction -->\n\n'
+      printf '<!-- Authority checked, tagged: verified: path:line / inferred: / assumed: -->\n\n'
+      printf '<!-- Change made, or the argument for rejecting. -->\n'
+      ;;
+    closure)
+      printf '<!-- Settled outcome, readiness, and caveats (e.g. tests not run). -->\n'
+      printf '<!-- The script appends the closing sentence; do not repeat it here. -->\n'
+      ;;
+  esac
+}
+
 DIR="" THREAD="" AUTHOR="" KIND="" TITLE="" CLOSES="" BODY_FILE=""
 INITIAL=0
-RESPONDING_TO="" ADDENDUM_TO=""
+RESPONDING_TO="" ADDENDUM_TO="" PRINT_TEMPLATE=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -33,10 +58,21 @@ while [[ $# -gt 0 ]]; do
     --closes) CLOSES="${2:?}"; shift 2 ;;
     --title) TITLE="${2:?}"; shift 2 ;;
     --body-file) BODY_FILE="${2:?}"; shift 2 ;;
+    --print-body-template) PRINT_TEMPLATE=1; shift ;;
     --help|-h) usage ;;
     *) usage ;;
   esac
 done
+
+if [[ $PRINT_TEMPLATE -eq 1 ]]; then
+  [[ -n "$KIND" ]] || { printf -- '--kind is required with --print-body-template\n' >&2; exit 1; }
+  case "$KIND" in
+    ask|proposal|finding|answer|closure) ;;
+    *) printf 'invalid --kind: %s\n' "$KIND" >&2; usage ;;
+  esac
+  body_template "$KIND"
+  exit 0
+fi
 
 [[ -n "$DIR" && -n "$THREAD" && -n "$AUTHOR" && -n "$KIND" && -n "$TITLE" ]] || usage
 [[ -n "$BODY_FILE" ]] || { printf '%s\n' '--body-file is required' >&2; exit 1; }
