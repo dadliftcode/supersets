@@ -10,24 +10,17 @@ Finish and verify your own outbound turn before starting the watcher, so it's pa
 
 Claude Code: `Monitor` + `ScheduleWakeup` + `TaskStop`.
 
+Run the bundled watcher through `Monitor` so every harness uses the same exact frontmatter filtering:
+
 ```bash
-d=<chat-dir>
-sig()  { stat -c '%n %Y %s' "$1" 2>/dev/null || stat -f '%N %m %z' "$1"; }   # GNU, then BSD
-snap() { while IFS= read -r -d '' f; do sig "$f"; done \
-           < <(find "$d" -maxdepth 1 -type f -name '*-<thread-slug>-*.md' \
-               -not -name '*-<your-identity>.md' -print0) | LC_ALL=C sort; }
-prev=$(snap)
-while true; do sleep 20; cur=$(snap)
-  comm -13 <(printf '%s\n' "$prev" | grep -v '^$') <(printf '%s\n' "$cur" | grep -v '^$'); prev="$cur"; done
+SKILL_DIR="/absolute/path/from-the-loaded-skill-entry"
+"$SKILL_DIR/scripts/watch_for_reply.sh" <chat-dir> 20 \
+  --thread <thread-slug> --author <your-identity>
 ```
 
 Run it via `Monitor` with `persistent: true`, then `/loop` with no interval to self-pace.
 
-Two things that bite:
-- **Scope the `find` pattern to your thread slug**, and exclude your own filename suffix (`-<your-identity>.md`) — without both, the monitor wakes on every turn in the drop-box, including your own writes and unrelated threads. This narrows, but doesn't exactly isolate: the pattern is a substring match, so a thread slug that's a literal prefix of another thread's slug (`supersets-review` inside `supersets-review-followup`) still matches both. Confirm the `thread_slug:` frontmatter value, not just that the filename matched, before trusting a hit as yours.
-- **You cannot tell whether a monitor is already live.** `TaskList` doesn't surface Monitors and `ps` is sandbox-blocked. On any re-invocation, `TaskStop` the known ID then re-arm — one guaranteed watcher beats guessing.
-
-A third thing bites specifically in a drop-box transitioning between naming conventions: **a watcher already running with an old exclude pattern won't automatically pick up the new one.** If the directory has prior turns in a different shape (e.g. `*-from-<identity>.md` instead of this skill's `*-<identity>.md`), a watcher started under the old convention keeps its old exclude glob — it will self-wake on your own new-convention reply the instant you mint it. Check the running watcher's exclude pattern against your own filename's actual shape before minting your first turn, or restart it with the updated pattern.
+**You cannot tell whether a monitor is already live.** `TaskList` doesn't surface Monitors and `ps` is sandbox-blocked. On any re-invocation, `TaskStop` the known ID then re-arm — one guaranteed watcher beats guessing.
 
 ## Otherwise
 
@@ -35,18 +28,21 @@ Run:
 
 ```bash
 SKILL_DIR="/absolute/path/from-the-loaded-skill-entry"
-"$SKILL_DIR/scripts/watch_for_reply.sh" <chat-dir> [poll-seconds] '*-<thread-slug>-*.md' --exclude '*-<your-identity>.md'
+"$SKILL_DIR/scripts/watch_for_reply.sh" <chat-dir> [poll-seconds] \
+  --thread <thread-slug> --author <your-identity>
 ```
 
-`SKILL_DIR` is the absolute directory containing the loaded `SKILL.md`, not the repository working directory. The script defaults to a 15s poll. Keep the watcher process alive and check in on it no less often than every 60s; give concise updates to your human partner while waiting. Always scope the pattern to your full thread slug, not a generic word — a shared, org-wide drop-box is the common case, not the exception, and an unscoped or under-scoped pattern wakes on every unrelated project's turns too.
+`SKILL_DIR` is the absolute directory containing the loaded `SKILL.md`, not the repository working directory. The script defaults to a 15s poll. Keep the watcher process alive and check in on it no less often than every 60s; give concise updates to your human partner while waiting.
+
+The watcher scans Markdown files but snapshots only those with closed, canonical, non-duplicated flat frontmatter whose `thread_slug` exactly equals `--thread` and whose `from` value differs from `--author`. Filenames are not authoritative: hyphens make thread and author boundaries ambiguous there, while the frontmatter fields remain exact.
 
 ## When the watcher reports a change
 
-Inspect it — read the `thread_slug:` frontmatter, don't just trust that the filename matched your watch pattern. If it's unrelated to your thread, or self-authored, re-establish the baseline and keep watching. If it's your peer's reply, read it and return to verification.
+Read the reported turn and return to verification. Exact thread and author filtering establishes which exchange produced it, not whether its claims are correct.
 
 ## Closing a thread vs. tearing down the watcher
 
-These are not the same event. **Closing a thread** — see SKILL.md's "Closing a Thread" — ends one topic. Each watcher process has a fixed thread pattern, so it cannot follow a later thread automatically. When another thread starts, stop the old process or monitor and re-arm a new one with the new full thread slug after the outbound turn is complete. Reusing the old watcher silently misses the new thread.
+These are not the same event. **Closing a thread** — see SKILL.md's "Closing a Thread" — ends one topic. Each watcher process has a fixed `--thread` value, so it cannot follow a later thread automatically. When another thread starts, stop the old process or monitor and re-arm a new one with the new full thread slug after the outbound turn is complete. Reusing the old watcher silently misses the new thread.
 
 **Tearing down the monitoring session** happens only when no further threads are expected for the rest of the session. With native monitor/wakeup primitives:
 

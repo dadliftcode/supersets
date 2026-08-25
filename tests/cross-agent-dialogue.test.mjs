@@ -11,6 +11,14 @@ const newTurn = path.join(
   repoRoot,
   'skills/cross-agent-dialogue/scripts/new_turn.sh',
 )
+const watchForReply = path.join(
+  repoRoot,
+  'skills/cross-agent-dialogue/scripts/watch_for_reply.sh',
+)
+const openAiMetadata = path.join(
+  repoRoot,
+  'skills/cross-agent-dialogue/agents/openai.yaml',
+)
 
 function chatDirectory(t) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'cross-agent-dialogue-'))
@@ -73,9 +81,51 @@ function waitForDirectoryEntry(directory, child, timeoutMs = 2000) {
   })
 }
 
-function waitForExit(child) {
-  return new Promise((resolve) => child.once('close', resolve))
+function waitForExit(child, timeoutMs = 3000) {
+  return new Promise((resolve, reject) => {
+    if (child.exitCode !== null) {
+      resolve(child.exitCode)
+      return
+    }
+    const timeout = setTimeout(() => {
+      reject(new Error('child process did not exit'))
+    }, timeoutMs)
+    child.once('close', (code) => {
+      clearTimeout(timeout)
+      resolve(code)
+    })
+  })
 }
+
+function waitForOutput(child, readOutput, pattern, timeoutMs = 2000) {
+  return new Promise((resolve, reject) => {
+    const deadline = Date.now() + timeoutMs
+    const check = () => {
+      const output = readOutput()
+      if (pattern.test(output)) {
+        resolve(output)
+      } else if (child.exitCode !== null) {
+        reject(new Error(`child exited before matching ${pattern}: ${output}`))
+      } else if (Date.now() >= deadline) {
+        reject(new Error(`child produced no output matching ${pattern}: ${output}`))
+      } else {
+        setTimeout(check, 10)
+      }
+    }
+    check()
+  })
+}
+
+test('keeps the Codex short description within its schema bounds', () => {
+  const metadata = fs.readFileSync(openAiMetadata, 'utf8')
+  const match = metadata.match(/^  short_description: "([^"]+)"$/m)
+
+  assert.ok(match, 'missing quoted interface.short_description')
+  assert.ok(
+    match[1].length >= 25 && match[1].length <= 64,
+    `short_description must be 25-64 characters; got ${match[1].length}`,
+  )
+})
 
 test('requires a complete body before publishing a turn', (t) => {
   const directory = chatDirectory(t)
@@ -197,6 +247,97 @@ test('rejects a response to a different thread', (t) => {
   assert.match(response.stderr, /thread_slug does not match --thread/)
 })
 
+test('rejects a referenced turn with unterminated frontmatter', (t) => {
+  const directory = chatDirectory(t)
+  const reference = writeBody(
+    directory,
+    '2026-08-25-120000-supersets-atomic-turns-claude-review-442.md',
+    `---
+from: claude-review-442
+turn_kind: answer
+thread_slug: supersets-atomic-turns
+# Missing closing delimiter
+`,
+  )
+  const body = writeBody(directory, 'response.txt', 'Response.\n')
+
+  const response = runTurn([
+    '--dir', directory,
+    '--thread', 'supersets-atomic-turns',
+    '--author', 'codex-review-825',
+    '--kind', 'answer',
+    '--responding-to', reference,
+    '--title', 'Reject malformed reference',
+    '--body-file', body,
+  ])
+
+  assert.notEqual(response.status, 0)
+  assert.match(response.stderr, /invalid or missing thread_slug/)
+  assert.deepEqual(markdownFiles(directory), [path.basename(reference)])
+})
+
+test('rejects duplicate keys anywhere in referenced frontmatter', (t) => {
+  const directory = chatDirectory(t)
+  const reference = writeBody(
+    directory,
+    '2026-08-25-120000-supersets-atomic-turns-claude-review-442.md',
+    `---
+from:
+from: review-claude-442
+turn_kind: answer
+thread_slug: supersets-atomic-turns
+---
+# Ambiguous author
+`,
+  )
+  const body = writeBody(directory, 'response.txt', 'Response.\n')
+
+  const response = runTurn([
+    '--dir', directory,
+    '--thread', 'supersets-atomic-turns',
+    '--author', 'codex-review-825',
+    '--kind', 'answer',
+    '--responding-to', reference,
+    '--title', 'Reject duplicate reference keys',
+    '--body-file', body,
+  ])
+
+  assert.notEqual(response.status, 0)
+  assert.match(response.stderr, /invalid or missing thread_slug/)
+  assert.deepEqual(markdownFiles(directory), [path.basename(reference)])
+})
+
+test('rejects YAML-equivalent duplicate keys with separation whitespace', (t) => {
+  const directory = chatDirectory(t)
+  const reference = writeBody(
+    directory,
+    '2026-08-25-120000-supersets-atomic-turns-claude-review-442.md',
+    `---
+from : claude-review-442
+from: review-claude-442
+turn_kind: answer
+thread_slug: supersets-atomic-turns
+---
+# Ambiguous author
+`,
+  )
+  const body = writeBody(directory, 'response.txt', 'Response.\n')
+
+  const response = runTurn([
+    '--dir', directory,
+    '--thread', 'supersets-atomic-turns',
+    '--author', 'codex-review-825',
+    '--kind', 'answer',
+    '--responding-to', reference,
+    '--title', 'Reject noncanonical reference keys',
+    '--body-file', body,
+  ])
+
+  assert.notEqual(response.status, 0)
+  assert.match(response.stderr, /invalid or missing thread_slug/)
+  assert.deepEqual(markdownFiles(directory), [path.basename(reference)])
+})
+
 test('rejects an addendum attributed to another author', (t) => {
   const directory = chatDirectory(t)
   const initialBody = writeBody(directory, 'initial.txt', 'Initial question.\n')
@@ -216,6 +357,65 @@ test('rejects an addendum attributed to another author', (t) => {
 
   assert.notEqual(addendum.status, 0)
   assert.match(addendum.stderr, /from does not match --author/)
+})
+
+test('watches exact frontmatter values despite hyphenated filename collisions', async (t) => {
+  const directory = chatDirectory(t)
+  const child = spawn(watchForReply, [
+    directory,
+    '1',
+    '--thread', 'supersets-review',
+    '--author', 'claude-4412',
+    '--once',
+  ], {
+    cwd: repoRoot,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  let stdout = ''
+  let stderr = ''
+  child.stdout.setEncoding('utf8')
+  child.stderr.setEncoding('utf8')
+  child.stdout.on('data', (chunk) => { stdout += chunk })
+  child.stderr.on('data', (chunk) => { stderr += chunk })
+  t.after(() => {
+    if (child.exitCode === null) child.kill('SIGTERM')
+  })
+  const exit = waitForExit(child)
+
+  await waitForOutput(child, () => stdout, /^watching /)
+
+  const selfAuthored = writeBody(
+    directory,
+    '2026-08-25-120000-supersets-review-claude-4412.md',
+    '---\nfrom: claude-4412\nturn_kind: finding\nthread_slug: supersets-review\n---\n',
+  )
+  const prefixRelated = writeBody(
+    directory,
+    '2026-08-25-120001-supersets-review-followup-peer.md',
+    '---\nfrom: peer\nturn_kind: finding\nthread_slug: supersets-review-followup\n---\n',
+  )
+  const emptyValuedDuplicate = writeBody(
+    directory,
+    '2026-08-25-120002-supersets-review-duplicate-peer.md',
+    '---\nfrom:\nfrom: duplicate-peer\nturn_kind: finding\nthread_slug: supersets-review\n---\n',
+  )
+  const noncanonicalDuplicate = writeBody(
+    directory,
+    '2026-08-25-120003-supersets-review-spaced-peer.md',
+    '---\nfrom : spaced-peer\nfrom: noncanonical-peer\nturn_kind: finding\nthread_slug: supersets-review\n---\n',
+  )
+  const distinctPeer = writeBody(
+    directory,
+    '2026-08-25-120004-supersets-review-review-claude-4412.md',
+    '---\nfrom: review-claude-4412\nturn_kind: finding\nthread_slug: supersets-review\n---\n',
+  )
+
+  assert.equal(await exit, 0, stderr)
+  assert.equal(stdout.includes(path.basename(selfAuthored)), false)
+  assert.equal(stdout.includes(path.basename(prefixRelated)), false)
+  assert.equal(stdout.includes(path.basename(emptyValuedDuplicate)), false)
+  assert.equal(stdout.includes(path.basename(noncanonicalDuplicate)), false)
+  assert.equal(stdout.includes(path.basename(distinctPeer)), true)
 })
 
 test('prints a body template without touching the drop-box', (t) => {

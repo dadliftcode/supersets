@@ -122,17 +122,40 @@ frontmatter_field() {
   local file="$1" key="$2"
   awk -v key="$key" '
     NR == 1 {
-      if ($0 != "---") exit 1
+      if ($0 != "---") {
+        invalid = 1
+        exit 1
+      }
       in_frontmatter = 1
       next
     }
-    in_frontmatter && $0 == "---" { exit }
-    in_frontmatter && index($0, key ": ") == 1 {
-      print substr($0, length(key) + 3)
-      found = 1
+    in_frontmatter && $0 == "---" {
+      closed = 1
+      in_frontmatter = 0
       exit
     }
-    END { if (!found) exit 1 }
+    in_frontmatter {
+      if ($0 ~ /^[ \t]*$/ || $0 ~ /^[ \t]*#/) next
+      separator = index($0, ":")
+      field = substr($0, 1, separator - 1)
+      remainder = substr($0, separator + 1)
+      if (separator <= 1 || field !~ /^[A-Za-z_][A-Za-z0-9_-]*$/ ||
+          (remainder != "" && remainder !~ /^[ \t]/)) {
+        invalid = 1
+        next
+      }
+      seen[field]++
+      if (seen[field] > 1) invalid = 1
+      if (field == key) {
+        value = remainder
+        sub(/^[ \t]+/, "", value)
+        found++
+      }
+    }
+    END {
+      if (invalid || !closed || found != 1) exit 1
+      print value
+    }
   ' "$file"
 }
 
@@ -140,13 +163,13 @@ validate_ref() {
   local filename="$1" relationship="$2" file ref_thread ref_author
   file="$DIR/$filename"
   ref_thread="$(frontmatter_field "$file" thread_slug)" \
-    || { printf 'referenced file has no thread_slug: %s\n' "$filename" >&2; return 1; }
+    || { printf 'referenced file has invalid or missing thread_slug: %s\n' "$filename" >&2; return 1; }
   [[ "$ref_thread" == "$THREAD" ]] \
     || { printf 'referenced thread_slug does not match --thread: %s != %s\n' "$ref_thread" "$THREAD" >&2; return 1; }
 
   if [[ "$relationship" == addendum ]]; then
     ref_author="$(frontmatter_field "$file" from)" \
-      || { printf 'referenced file has no from identity: %s\n' "$filename" >&2; return 1; }
+      || { printf 'referenced file has invalid or missing from identity: %s\n' "$filename" >&2; return 1; }
     [[ "$ref_author" == "$AUTHOR" ]] \
       || { printf 'referenced from does not match --author: %s != %s\n' "$ref_author" "$AUTHOR" >&2; return 1; }
   fi

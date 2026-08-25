@@ -177,5 +177,5 @@ A `finding`/`answer` turn fills the Verdict/Authority/Change table instead of th
 - A verdict with an empty Authority slot.
 - A finding cited against one file when you know the same code exists elsewhere.
 - Leaving a watcher scoped to a closed thread when the next thread opens — re-arm it with the new full slug.
-- A watch pattern scoped to one word instead of the full thread slug (`*-review-*.md` instead of `*-webapp-4412-search-latency-*.md`) — a generic word is exactly the kind of thing every thread in a shared drop-box has in common.
+- Copying an old filename-glob watcher command instead of passing the exact full slug and identity through `--thread` and `--author` — filename boundaries are ambiguous when either value contains hyphens.
 - A drop-box path typed from memory instead of checked against `AGENTS.md`/`CLAUDE.md`.
