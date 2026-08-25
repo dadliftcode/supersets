@@ -16,6 +16,7 @@ Battle-tested agent skills for strong software engineering.
 
 ## Included skills
 
+- [`cross-agent-dialogue`](skills/cross-agent-dialogue/SKILL.md) verifies and answers another agent's review feedback, or works through a design or debugging problem together, through auditable file-based turns.
 - [`writing-architecture-decision-records`](skills/writing-architecture-decision-records/SKILL.md) decides whether an architectural choice warrants an ADR, writes it, and preserves history when an accepted decision is superseded.
 - [`writing-commits`](skills/writing-commits/SKILL.md) writes clear Git commit messages for future readers.
 - [`writing-pr-descriptions`](skills/writing-pr-descriptions/SKILL.md) writes reviewer-aid pull request descriptions and opens the PR.

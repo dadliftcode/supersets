@@ -32,6 +32,7 @@ test('skills directory contains all shipped skills', () => {
     'writing-commits',
     'writing-architecture-decision-records',
     'writing-pr-descriptions',
+    'cross-agent-dialogue',
   ]
   for (const skill of shipped) {
     assert.ok(
