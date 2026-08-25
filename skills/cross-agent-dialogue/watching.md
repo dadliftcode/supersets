@@ -12,7 +12,7 @@ Claude Code: `Monitor` + `ScheduleWakeup` + `TaskStop`.
 
 ```bash
 d=<chat-dir>
-sig()  { stat -f '%N %m %z' "$1" 2>/dev/null || stat -c '%n %Y %s' "$1"; }   # BSD, then GNU
+sig()  { stat -c '%n %Y %s' "$1" 2>/dev/null || stat -f '%N %m %z' "$1"; }   # GNU, then BSD
 snap() { while IFS= read -r -d '' f; do sig "$f"; done \
            < <(find "$d" -maxdepth 1 -type f -name '*-<thread-slug>-*.md' \
                -not -name '*-<your-identity>.md' -print0) | LC_ALL=C sort; }
@@ -24,7 +24,7 @@ while true; do sleep 20; cur=$(snap)
 Run it via `Monitor` with `persistent: true`, then `/loop` with no interval to self-pace.
 
 Two things that bite:
-- **Scope the `find` pattern to your thread slug**, and exclude your own filename suffix (`-<your-identity>.md`) — without both, the monitor wakes on every turn in the drop-box, including your own writes and unrelated threads.
+- **Scope the `find` pattern to your thread slug**, and exclude your own filename suffix (`-<your-identity>.md`) — without both, the monitor wakes on every turn in the drop-box, including your own writes and unrelated threads. This narrows, but doesn't exactly isolate: the pattern is a substring match, so a thread slug that's a literal prefix of another thread's slug (`supersets-review` inside `supersets-review-followup`) still matches both. Confirm the `thread_slug:` frontmatter value, not just that the filename matched, before trusting a hit as yours.
 - **You cannot tell whether a monitor is already live.** `TaskList` doesn't surface Monitors and `ps` is sandbox-blocked. On any re-invocation, `TaskStop` the known ID then re-arm — one guaranteed watcher beats guessing.
 
 A third thing bites specifically in a drop-box transitioning between naming conventions: **a watcher already running with an old exclude pattern won't automatically pick up the new one.** If the directory has prior turns in a different shape (e.g. `*-from-<identity>.md` instead of this skill's `*-<identity>.md`), a watcher started under the old convention keeps its old exclude glob — it will self-wake on your own new-convention reply the instant you mint it. Check the running watcher's exclude pattern against your own filename's actual shape before minting your first turn, or restart it with the updated pattern.
@@ -41,7 +41,7 @@ Defaults to a 15s poll. Keep the watcher process alive and check in on it no les
 
 ## When the watcher reports a change
 
-Inspect it. If it's unrelated to your thread, or self-authored, re-establish the baseline and keep watching. If it's your peer's reply, read it and return to verification.
+Inspect it — read the `thread_slug:` frontmatter, don't just trust that the filename matched your watch pattern. If it's unrelated to your thread, or self-authored, re-establish the baseline and keep watching. If it's your peer's reply, read it and return to verification.
 
 ## Closing a thread vs. tearing down the watcher
 

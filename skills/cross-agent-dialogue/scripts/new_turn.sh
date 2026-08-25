@@ -55,6 +55,8 @@ reply_modes=0
 
 if [[ "$KIND" == closure ]]; then
   [[ -n "$CLOSES" ]] || { printf -- '--closes is required when --kind closure\n' >&2; exit 1; }
+  [[ "$CLOSES" =~ $SLUG_RE ]] || { printf -- '--closes must be lowercase letters, digits, hyphens: %s\n' "$CLOSES" >&2; exit 1; }
+  [[ "$CLOSES" == "$THREAD" ]] || { printf -- '--closes must match --thread (a closure closes its own thread): %s != %s\n' "$CLOSES" "$THREAD" >&2; exit 1; }
 else
   [[ -z "$CLOSES" ]] || { printf -- '--closes is only valid when --kind closure\n' >&2; exit 1; }
 fi
@@ -63,18 +65,14 @@ fi
 [[ -w "$DIR" ]] || { printf 'not writable: %s\n' "$DIR" >&2; exit 1; }
 
 # Resolve a --responding-to/--addendum-to reference to a basename that exists
-# in DIR, whether the caller passed a bare filename or a full path.
+# in DIR, whether the caller passed a bare filename or a full path. Always
+# checks existence inside DIR specifically — a file that exists elsewhere on
+# disk with the same basename must not satisfy the reference.
 resolve_ref() {
-  local ref="$1"
-  if [[ -f "$ref" ]]; then
-    basename "$ref"
-    return 0
-  fi
-  if [[ -f "$DIR/$(basename "$ref")" ]]; then
-    basename "$ref"
-    return 0
-  fi
-  return 1
+  local ref="$1" candidate
+  candidate="$DIR/$(basename "$ref")"
+  [[ -f "$candidate" ]] || return 1
+  basename "$ref"
 }
 
 if [[ -n "$RESPONDING_TO" ]]; then
