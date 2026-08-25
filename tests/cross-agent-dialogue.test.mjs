@@ -340,6 +340,66 @@ thread_slug: supersets-atomic-turns
   assert.deepEqual(markdownFiles(directory), [path.basename(reference)])
 })
 
+test('rejects a response to a turn with an empty author identity', (t) => {
+  const directory = chatDirectory(t)
+  const reference = writeBody(
+    directory,
+    '2026-08-25-120000-supersets-atomic-turns-claude-review-442.md',
+    `---
+from:
+turn_kind: answer
+thread_slug: supersets-atomic-turns
+---
+# Empty author
+`,
+  )
+  const body = writeBody(directory, 'response.txt', 'Response.\n')
+
+  const response = runTurn([
+    '--dir', directory,
+    '--thread', 'supersets-atomic-turns',
+    '--author', 'codex-review-825',
+    '--kind', 'answer',
+    '--responding-to', reference,
+    '--title', 'Reject empty response author',
+    '--body-file', body,
+  ])
+
+  assert.notEqual(response.status, 0)
+  assert.match(response.stderr, /invalid from identity/)
+  assert.deepEqual(markdownFiles(directory), [path.basename(reference)])
+})
+
+test('rejects a response to a turn with a malformed author identity', (t) => {
+  const directory = chatDirectory(t)
+  const reference = writeBody(
+    directory,
+    '2026-08-25-120000-supersets-atomic-turns-claude-review-442.md',
+    `---
+from: claude review 442
+turn_kind: answer
+thread_slug: supersets-atomic-turns
+---
+# Malformed author
+`,
+  )
+  const body = writeBody(directory, 'response.txt', 'Response.\n')
+
+  const response = runTurn([
+    '--dir', directory,
+    '--thread', 'supersets-atomic-turns',
+    '--author', 'codex-review-825',
+    '--kind', 'answer',
+    '--responding-to', reference,
+    '--title', 'Reject malformed response author',
+    '--body-file', body,
+  ])
+
+  assert.notEqual(response.status, 0)
+  assert.match(response.stderr, /invalid from identity/)
+  assert.deepEqual(markdownFiles(directory), [path.basename(reference)])
+})
+
 test('rejects a response to the same author\'s turn', (t) => {
   const directory = chatDirectory(t)
   const reference = writeBody(

@@ -175,6 +175,8 @@ validate_ref() {
     || { printf 'referenced thread_slug does not match --thread: %s != %s\n' "$ref_thread" "$THREAD" >&2; return 1; }
   ref_author="$(frontmatter_field "$file" from)" \
     || { printf 'referenced file has invalid or missing from identity: %s\n' "$filename" >&2; return 1; }
+  [[ "$ref_author" =~ $SLUG_RE ]] \
+    || { printf 'referenced file has invalid from identity: %s\n' "$filename" >&2; return 1; }
 
   if [[ "$relationship" == addendum ]]; then
     [[ "$ref_author" == "$AUTHOR" ]] \
