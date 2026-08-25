@@ -109,7 +109,7 @@ Closing a thread does not mean the drop-box or any active watcher is done — se
 
 ## Watching for a Reply
 
-Start a watch only when explicitly asked for active monitoring — this skill doesn't provide background persistence on its own. See [watching.md](watching.md) for the mechanics (native harness primitives vs. `scripts/watch_for_reply.sh`), scoping a watch to one thread in a multi-thread drop-box, and the difference between closing a thread and tearing the watcher down.
+Start a watch only when explicitly asked for active monitoring — this skill doesn't provide background persistence on its own. But don't stay silent about the option: after minting a turn that isn't a `closure`, tell your human partner a watch is available and ask if they want one started, rather than finishing the turn and leaving them to think to ask — the same instructions read by two different agents should not produce "one offers, one waits to be asked." See [watching.md](watching.md) for the mechanics (native harness primitives vs. `scripts/watch_for_reply.sh`), scoping a watch to one thread in a multi-thread drop-box, and the difference between closing a thread and tearing the watcher down.
 
 ## Handling Failures
 
@@ -160,6 +160,7 @@ A `finding`/`answer` turn fills the Verdict/Authority/Change table instead of th
 | No written artifact | The next round re-raises what you silently fixed |
 | Appending to the peer's file | Their turn is their record. New file, always |
 | Waiting to send a second finding until a reply arrives | Send it as an addendum immediately |
+| Finishing a non-closure turn without mentioning watching | Offer it — don't make your human partner think to ask |
 
 ## Red Flags
 
