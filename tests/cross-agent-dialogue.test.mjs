@@ -1,0 +1,240 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { spawn, spawnSync } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const newTurn = path.join(
+  repoRoot,
+  'skills/cross-agent-dialogue/scripts/new_turn.sh',
+)
+
+function chatDirectory(t) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'cross-agent-dialogue-'))
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }))
+  return directory
+}
+
+function writeBody(directory, name, content) {
+  const body = path.join(directory, name)
+  fs.writeFileSync(body, content)
+  return body
+}
+
+function runTurn(args, options = {}) {
+  return spawnSync(newTurn, args, {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    ...options,
+  })
+}
+
+function initialArgs(directory, body, overrides = {}) {
+  const values = {
+    thread: 'supersets-atomic-turns',
+    author: 'codex-review-825',
+    kind: 'ask',
+    title: 'Review atomic publication',
+    ...overrides,
+  }
+
+  return [
+    '--dir', directory,
+    '--thread', values.thread,
+    '--author', values.author,
+    '--kind', values.kind,
+    '--initial',
+    '--title', values.title,
+    '--body-file', body,
+  ]
+}
+
+function markdownFiles(directory) {
+  return fs.readdirSync(directory).filter((name) => name.endsWith('.md'))
+}
+
+function waitForDirectoryEntry(directory, child, timeoutMs = 2000) {
+  return new Promise((resolve, reject) => {
+    const deadline = Date.now() + timeoutMs
+    const check = () => {
+      const entries = fs.readdirSync(directory)
+      if (entries.length > 0 || child.exitCode !== null) {
+        resolve(entries)
+      } else if (Date.now() >= deadline) {
+        reject(new Error('turn process produced no observable state'))
+      } else {
+        setTimeout(check, 10)
+      }
+    }
+    check()
+  })
+}
+
+function waitForExit(child) {
+  return new Promise((resolve) => child.once('close', resolve))
+}
+
+test('requires a complete body before publishing a turn', (t) => {
+  const directory = chatDirectory(t)
+  const result = runTurn(initialArgs(directory, '').slice(0, -2))
+
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /--body-file is required/)
+  assert.deepEqual(markdownFiles(directory), [])
+})
+
+test('publishes frontmatter, protocol, and supplied body together', (t) => {
+  const directory = chatDirectory(t)
+  const body = writeBody(
+    directory,
+    'body.txt',
+    'verified: app/search.rb:12 — the query is bounded.\n\nWhat would change my mind: a wider query plan.\n',
+  )
+
+  const result = runTurn(initialArgs(directory, body))
+
+  assert.equal(result.status, 0, result.stderr)
+  const filename = path.basename(result.stdout.trim())
+  assert.deepEqual(markdownFiles(directory), [filename])
+  assert.equal(
+    fs.readFileSync(path.join(directory, filename), 'utf8'),
+    `---
+from: codex-review-825
+turn_kind: ask
+thread_slug: supersets-atomic-turns
+---
+# Review atomic publication
+
+Reply with a new timestamped file in this directory whose \`responding_to\`
+frontmatter names \`${filename}\`.
+
+verified: app/search.rb:12 — the query is bounded.
+
+What would change my mind: a wider query plan.
+`,
+  )
+  assert.equal(
+    fs.statSync(path.join(directory, filename)).mode & 0o777,
+    0o666 & ~process.umask(),
+  )
+})
+
+test('does not publish while a stdin body remains open', async (t) => {
+  const directory = chatDirectory(t)
+  const child = spawn(newTurn, initialArgs(directory, '-'), {
+    cwd: repoRoot,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  })
+  let stdout = ''
+  let stderr = ''
+  child.stdout.setEncoding('utf8')
+  child.stderr.setEncoding('utf8')
+  child.stdin.on('error', () => {})
+  child.stdout.on('data', (chunk) => { stdout += chunk })
+  child.stderr.on('data', (chunk) => { stderr += chunk })
+
+  child.stdin.write('Question and verified evidence.\n')
+  const entriesWhileOpen = await waitForDirectoryEntry(directory, child)
+
+  assert.equal(child.exitCode, null, stderr)
+  assert.deepEqual(entriesWhileOpen.filter((name) => name.endsWith('.md')), [])
+
+  child.stdin.end('\nWhat would change my mind: contradictory evidence.\n')
+  const exitCode = await waitForExit(child)
+
+  assert.equal(exitCode, 0, stderr)
+  const filename = path.basename(stdout.trim())
+  assert.deepEqual(fs.readdirSync(directory), [filename])
+  assert.match(
+    fs.readFileSync(path.join(directory, filename), 'utf8'),
+    /Question and verified evidence\.[\s\S]*contradictory evidence\./,
+  )
+})
+
+test('refuses to overwrite a turn with the same filename', (t) => {
+  const directory = chatDirectory(t)
+  const bin = path.join(directory, 'bin')
+  fs.mkdirSync(bin)
+  const fakeDate = path.join(bin, 'date')
+  fs.writeFileSync(fakeDate, '#!/usr/bin/env bash\nprintf "2026-08-25-120000\\n"\n')
+  fs.chmodSync(fakeDate, 0o755)
+  const firstBody = writeBody(directory, 'first.txt', 'First complete body.\n')
+  const secondBody = writeBody(directory, 'second.txt', 'Second complete body.\n')
+  const env = { ...process.env, PATH: `${bin}:${process.env.PATH}` }
+
+  const first = runTurn(initialArgs(directory, firstBody), { env })
+  const second = runTurn(initialArgs(directory, secondBody), { env })
+
+  assert.equal(first.status, 0, first.stderr)
+  assert.notEqual(second.status, 0)
+  assert.match(second.stderr, /already exists/)
+  const content = fs.readFileSync(first.stdout.trim(), 'utf8')
+  assert.match(content, /First complete body\./)
+  assert.doesNotMatch(content, /Second complete body\./)
+})
+
+test('rejects a response to a different thread', (t) => {
+  const directory = chatDirectory(t)
+  const initialBody = writeBody(directory, 'initial.txt', 'Initial question.\n')
+  const responseBody = writeBody(directory, 'response.txt', 'Response.\n')
+  const initial = runTurn(initialArgs(directory, initialBody))
+  assert.equal(initial.status, 0, initial.stderr)
+
+  const response = runTurn([
+    '--dir', directory,
+    '--thread', 'other-project-topic',
+    '--author', 'claude-review-442',
+    '--kind', 'answer',
+    '--responding-to', initial.stdout.trim(),
+    '--title', 'Cross-thread response',
+    '--body-file', responseBody,
+  ])
+
+  assert.notEqual(response.status, 0)
+  assert.match(response.stderr, /thread_slug does not match --thread/)
+})
+
+test('rejects an addendum attributed to another author', (t) => {
+  const directory = chatDirectory(t)
+  const initialBody = writeBody(directory, 'initial.txt', 'Initial question.\n')
+  const addendumBody = writeBody(directory, 'addendum.txt', 'Additional evidence.\n')
+  const initial = runTurn(initialArgs(directory, initialBody))
+  assert.equal(initial.status, 0, initial.stderr)
+
+  const addendum = runTurn([
+    '--dir', directory,
+    '--thread', 'supersets-atomic-turns',
+    '--author', 'claude-review-442',
+    '--kind', 'finding',
+    '--addendum-to', initial.stdout.trim(),
+    '--title', 'Misattributed addendum',
+    '--body-file', addendumBody,
+  ])
+
+  assert.notEqual(addendum.status, 0)
+  assert.match(addendum.stderr, /from does not match --author/)
+})
+
+test('appends the required closure sentence', (t) => {
+  const directory = chatDirectory(t)
+  const body = writeBody(directory, 'closure.txt', 'All findings are resolved. Tests pass.\n')
+  const result = runTurn([
+    '--dir', directory,
+    '--thread', 'supersets-atomic-turns',
+    '--author', 'codex-review-825',
+    '--kind', 'closure',
+    '--initial',
+    '--closes', 'supersets-atomic-turns',
+    '--title', 'Close atomic publication review',
+    '--body-file', body,
+  ])
+
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(
+    fs.readFileSync(result.stdout.trim(), 'utf8'),
+    /All findings are resolved\. Tests pass\.\n\nThis closes the review thread; no further response is needed\.\n$/,
+  )
+})
