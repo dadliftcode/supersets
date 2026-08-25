@@ -83,6 +83,7 @@ case "$KIND" in
 esac
 
 SLUG_RE='^[a-z0-9][a-z0-9-]*$'
+TURN_FILENAME_RE='^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{6}-[a-z0-9][a-z0-9-]*-[a-z0-9][a-z0-9-]*\.md$'
 [[ "$THREAD" =~ $SLUG_RE ]] || { printf -- '--thread must be lowercase letters, digits, hyphens: %s\n' "$THREAD" >&2; exit 1; }
 [[ "$AUTHOR" =~ $SLUG_RE ]] || { printf -- '--author must be lowercase letters, digits, hyphens: %s\n' "$AUTHOR" >&2; exit 1; }
 
@@ -112,10 +113,16 @@ fi
 # checks existence inside DIR specifically — a file that exists elsewhere on
 # disk with the same basename must not satisfy the reference.
 resolve_ref() {
-  local ref="$1" candidate
-  candidate="$DIR/$(basename "$ref")"
-  [[ -f "$candidate" ]] || return 1
-  basename "$ref"
+  local ref="$1" candidate filename
+  filename="$(basename "$ref")"
+  [[ "$filename" =~ $TURN_FILENAME_RE ]] \
+    || { printf 'not a canonical timestamped turn filename: %s\n' "$filename" >&2; return 1; }
+  candidate="$DIR/$filename"
+  [[ ! -L "$candidate" ]] \
+    || { printf 'referenced turn must not be a symlink: %s\n' "$filename" >&2; return 1; }
+  [[ -f "$candidate" ]] \
+    || { printf 'referenced file not found in %s: %s\n' "$DIR" "$ref" >&2; return 1; }
+  printf '%s\n' "$filename"
 }
 
 frontmatter_field() {
@@ -166,24 +173,25 @@ validate_ref() {
     || { printf 'referenced file has invalid or missing thread_slug: %s\n' "$filename" >&2; return 1; }
   [[ "$ref_thread" == "$THREAD" ]] \
     || { printf 'referenced thread_slug does not match --thread: %s != %s\n' "$ref_thread" "$THREAD" >&2; return 1; }
+  ref_author="$(frontmatter_field "$file" from)" \
+    || { printf 'referenced file has invalid or missing from identity: %s\n' "$filename" >&2; return 1; }
 
   if [[ "$relationship" == addendum ]]; then
-    ref_author="$(frontmatter_field "$file" from)" \
-      || { printf 'referenced file has invalid or missing from identity: %s\n' "$filename" >&2; return 1; }
     [[ "$ref_author" == "$AUTHOR" ]] \
       || { printf 'referenced from does not match --author: %s != %s\n' "$ref_author" "$AUTHOR" >&2; return 1; }
+  else
+    [[ "$ref_author" != "$AUTHOR" ]] \
+      || { printf 'response must reference a turn from a different author: %s\n' "$AUTHOR" >&2; return 1; }
   fi
 }
 
 if [[ -n "$RESPONDING_TO" ]]; then
-  resolved="$(resolve_ref "$RESPONDING_TO")" \
-    || { printf 'referenced file not found in %s: %s\n' "$DIR" "$RESPONDING_TO" >&2; exit 1; }
+  resolved="$(resolve_ref "$RESPONDING_TO")" || exit 1
   validate_ref "$resolved" response || exit 1
   RESPONDING_TO="$resolved"
 fi
 if [[ -n "$ADDENDUM_TO" ]]; then
-  resolved="$(resolve_ref "$ADDENDUM_TO")" \
-    || { printf 'referenced file not found in %s: %s\n' "$DIR" "$ADDENDUM_TO" >&2; exit 1; }
+  resolved="$(resolve_ref "$ADDENDUM_TO")" || exit 1
   validate_ref "$resolved" addendum || exit 1
   ADDENDUM_TO="$resolved"
 fi
@@ -220,7 +228,7 @@ TMP="$(mktemp "$DIR/.new-turn.XXXXXX")"
     cat "$BODY_FILE"
   fi
   if [[ "$KIND" == closure ]]; then
-    printf '\nThis closes the review thread; no further response is needed.\n'
+    printf '\nThis closes the thread; no further response is needed.\n'
   fi
 } > "$TMP"
 

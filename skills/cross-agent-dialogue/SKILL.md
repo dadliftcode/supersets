@@ -76,7 +76,7 @@ A claim with no tag is unverified, not accepted.
 - What you ruled out, and how.
 - **What evidence would change your mind.** A reply that only agrees must name what it checked — "sounds good" with no tag doesn't satisfy this. Agents defaulting to agreement is the dominant failure mode of this kind of exchange; this line is the check against it.
 
-**`closure`** — the body contains the settled outcome, readiness, and any caveat (e.g. tests not run). The script appends "This closes the review thread; no further response is needed."
+**`closure`** — the body contains the settled outcome, readiness, and any caveat (e.g. tests not run). The script appends "This closes the thread; no further response is needed."
 
 ## Which Authority Governs the Claim
 
@@ -104,7 +104,7 @@ Reject on evidence when the evidence supports it. A turn where you accept everyt
 
 Convergence is two-sided: your peer has filed an explicit `closure` turn, **and** you have no unresolved findings or open disagreements of your own. One without the other isn't done.
 
-Write the `closure` body with the settled outcome, readiness, and any caveat (tests not run, etc.), then mint it with `--closes <thread-slug>`. The script appends "This closes the review thread; no further response is needed."
+Write the `closure` body with the settled outcome, readiness, and any caveat (tests not run, etc.), then mint it with `--closes <thread-slug>`. The script appends "This closes the thread; no further response is needed."
 
 **A closure turn with no findings gets no reply.** Answering it restarts a thread both sides just ended.
 

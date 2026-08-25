@@ -247,6 +247,129 @@ test('rejects a response to a different thread', (t) => {
   assert.match(response.stderr, /thread_slug does not match --thread/)
 })
 
+test('rejects a referenced turn with a noncanonical filename', (t) => {
+  const directory = chatDirectory(t)
+  const reference = writeBody(
+    directory,
+    'not-a-turn\ninjected: true.md',
+    `---
+from: claude-review-442
+turn_kind: answer
+thread_slug: supersets-atomic-turns
+---
+# Malicious filename
+`,
+  )
+  const body = writeBody(directory, 'response.txt', 'Response.\n')
+
+  const response = runTurn([
+    '--dir', directory,
+    '--thread', 'supersets-atomic-turns',
+    '--author', 'codex-review-825',
+    '--kind', 'answer',
+    '--responding-to', reference,
+    '--title', 'Reject unsafe reference filename',
+    '--body-file', body,
+  ])
+
+  assert.notEqual(response.status, 0)
+  assert.match(response.stderr, /not a canonical timestamped turn filename/)
+  assert.deepEqual(markdownFiles(directory), [path.basename(reference)])
+})
+
+test('rejects a symlinked turn reference', (t) => {
+  const root = chatDirectory(t)
+  const directory = path.join(root, 'drop-box')
+  fs.mkdirSync(directory)
+  const target = writeBody(
+    root,
+    '2026-08-25-120000-supersets-atomic-turns-claude-review-442.md',
+    `---
+from: claude-review-442
+turn_kind: answer
+thread_slug: supersets-atomic-turns
+---
+# Outside the drop-box
+`,
+  )
+  const reference = path.join(directory, path.basename(target))
+  fs.symlinkSync(target, reference)
+  const body = writeBody(root, 'response.txt', 'Response.\n')
+
+  const response = runTurn([
+    '--dir', directory,
+    '--thread', 'supersets-atomic-turns',
+    '--author', 'codex-review-825',
+    '--kind', 'answer',
+    '--responding-to', reference,
+    '--title', 'Reject symlinked reference',
+    '--body-file', body,
+  ])
+
+  assert.notEqual(response.status, 0)
+  assert.match(response.stderr, /referenced turn must not be a symlink/)
+  assert.deepEqual(markdownFiles(directory), [path.basename(reference)])
+})
+
+test('rejects a response to a turn with no author identity', (t) => {
+  const directory = chatDirectory(t)
+  const reference = writeBody(
+    directory,
+    '2026-08-25-120000-supersets-atomic-turns-claude-review-442.md',
+    `---
+turn_kind: answer
+thread_slug: supersets-atomic-turns
+---
+# Missing author
+`,
+  )
+  const body = writeBody(directory, 'response.txt', 'Response.\n')
+
+  const response = runTurn([
+    '--dir', directory,
+    '--thread', 'supersets-atomic-turns',
+    '--author', 'codex-review-825',
+    '--kind', 'answer',
+    '--responding-to', reference,
+    '--title', 'Reject missing response author',
+    '--body-file', body,
+  ])
+
+  assert.notEqual(response.status, 0)
+  assert.match(response.stderr, /invalid or missing from identity/)
+  assert.deepEqual(markdownFiles(directory), [path.basename(reference)])
+})
+
+test('rejects a response to the same author\'s turn', (t) => {
+  const directory = chatDirectory(t)
+  const reference = writeBody(
+    directory,
+    '2026-08-25-120000-supersets-atomic-turns-codex-review-825.md',
+    `---
+from: codex-review-825
+turn_kind: finding
+thread_slug: supersets-atomic-turns
+---
+# Prior finding
+`,
+  )
+  const body = writeBody(directory, 'response.txt', 'Response.\n')
+
+  const response = runTurn([
+    '--dir', directory,
+    '--thread', 'supersets-atomic-turns',
+    '--author', 'codex-review-825',
+    '--kind', 'answer',
+    '--responding-to', reference,
+    '--title', 'Reject self-response',
+    '--body-file', body,
+  ])
+
+  assert.notEqual(response.status, 0)
+  assert.match(response.stderr, /response must reference a turn from a different author/)
+  assert.deepEqual(markdownFiles(directory), [path.basename(reference)])
+})
+
 test('rejects a referenced turn with unterminated frontmatter', (t) => {
   const directory = chatDirectory(t)
   const reference = writeBody(
@@ -436,7 +559,7 @@ test('requires --kind for --print-body-template', (t) => {
   assert.match(result.stderr, /--kind is required with --print-body-template/)
 })
 
-test('appends the required closure sentence', (t) => {
+test('appends the mode-neutral closure sentence', (t) => {
   const directory = chatDirectory(t)
   const body = writeBody(directory, 'closure.txt', 'All findings are resolved. Tests pass.\n')
   const result = runTurn([
@@ -453,6 +576,6 @@ test('appends the required closure sentence', (t) => {
   assert.equal(result.status, 0, result.stderr)
   assert.match(
     fs.readFileSync(result.stdout.trim(), 'utf8'),
-    /All findings are resolved\. Tests pass\.\n\nThis closes the review thread; no further response is needed\.\n$/,
+    /All findings are resolved\. Tests pass\.\n\nThis closes the thread; no further response is needed\.\n$/,
   )
 })
