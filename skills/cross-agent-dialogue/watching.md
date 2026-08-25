@@ -27,6 +27,8 @@ Two things that bite:
 - **Scope the `find` pattern to your thread slug**, and exclude your own filename suffix (`-<your-identity>.md`) — without both, the monitor wakes on every turn in the drop-box, including your own writes and unrelated threads.
 - **You cannot tell whether a monitor is already live.** `TaskList` doesn't surface Monitors and `ps` is sandbox-blocked. On any re-invocation, `TaskStop` the known ID then re-arm — one guaranteed watcher beats guessing.
 
+A third thing bites specifically in a drop-box transitioning between naming conventions: **a watcher already running with an old exclude pattern won't automatically pick up the new one.** If the directory has prior turns in a different shape (e.g. `*-from-<identity>.md` instead of this skill's `*-<identity>.md`), a watcher started under the old convention keeps its old exclude glob — it will self-wake on your own new-convention reply the instant you mint it. Check the running watcher's exclude pattern against your own filename's actual shape before minting your first turn, or restart it with the updated pattern.
+
 ## Otherwise
 
 Run:

@@ -38,7 +38,7 @@ scripts/new_turn.sh --dir <chat-dir> --thread <slug> --author <your-identity> \
   [--closes <slug>] --title "<title>"
 ```
 
-It builds the filename (`<timestamp>-<thread>-<author>.md`), writes matching YAML frontmatter, validates that a cited `--responding-to`/`--addendum-to` file actually exists, and drops a body scaffold for the turn kind you picked so you don't have to remember the shape by heart. Edit the file it prints to fill in the prose. `<your-identity>` is your own harness/model identity — never a literal example value copied from this file.
+It builds the filename (`<timestamp>-<thread>-<author>.md`), writes matching YAML frontmatter, validates that a cited `--responding-to`/`--addendum-to` file actually exists, and drops a body scaffold for the turn kind you picked so you don't have to remember the shape by heart. Edit the file it prints to fill in the prose. `<your-identity>` must distinguish you specifically from your peer, not just name your model family — never a literal example value copied from this file. A bare model name collides when both sides happen to run the same model (two Claude sessions, say): both turns would carry `from: claude` with no way to tell them apart from the file alone. Add a distinguishing suffix (`claude-webapp-4412`, mirroring the thread-slug project-prefix rule above) whenever that collision is possible.
 
 **One new file per message.** Never edit, append to, or replace a peer's file, even when invited to — their turn is their record. If you find something new before their reply arrives, send it as a new message with `--addendum-to <your prior file>` right away, rather than holding it until they respond.
 
