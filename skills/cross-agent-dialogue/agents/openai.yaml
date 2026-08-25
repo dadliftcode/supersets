@@ -1,0 +1,7 @@
+interface:
+  display_name: "Cross-Agent Dialogue"
+  short_description: "Review or think through a problem with another agent via verified, file-based turns."
+  default_prompt: "Set up a file-based exchange with another agent to review or discuss this."
+
+policy:
+  allow_implicit_invocation: true
