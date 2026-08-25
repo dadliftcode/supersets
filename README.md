@@ -16,6 +16,7 @@ Battle-tested agent skills for strong software engineering.
 
 ## Included skills
 
+- [`cross-agent-dialogue`](skills/cross-agent-dialogue/SKILL.md) verifies and answers another agent's review feedback, or works through a design or debugging problem together, through auditable file-based turns.
 - [`writing-architecture-decision-records`](skills/writing-architecture-decision-records/SKILL.md) decides whether an architectural choice warrants an ADR, writes it, and preserves history when an accepted decision is superseded.
 - [`writing-commits`](skills/writing-commits/SKILL.md) writes clear Git commit messages for future readers.
 - [`writing-pr-descriptions`](skills/writing-pr-descriptions/SKILL.md) writes reviewer-aid pull request descriptions and opens the PR.
@@ -70,7 +71,7 @@ claude plugin validate . --strict
 
 python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/plugin-creator/scripts/validate_plugin.py" .
 
-node --test tests/opencode-plugin.test.mjs
+node --test tests/*.test.mjs
 ```
 
 Before tagging a release, smoke-test the checkout through both real hosts
@@ -90,7 +91,10 @@ and OpenCode:
    without erasing history. Exercise the PR-description skill on a branch
    that is ready to open: with a repo template, and in a repo that has none
    (sample recent PRs, write this description, offer a template, do not
-   write the template file unless asked).
+   write the template file unless asked). Exercise the cross-agent-dialogue
+   skill with a temporary drop-box: mint a complete initial turn, reject a
+   cross-thread response, watch for its reply, then re-arm the watcher for a
+   second thread.
 
 ## Releases
 
