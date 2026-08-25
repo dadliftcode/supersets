@@ -8,11 +8,11 @@ license: MIT
 
 ## Overview
 
-A peer's turn — a review finding, a proposal, an answer — is a **claim**, not an instruction. Establish whether it's true against the authority that governs it before you act on it or agree with it, then answer in writing so the exchange converges instead of drifting. This holds whether the exchange is a structured review of a finished artifact or a live discussion mid-build — the mechanism is the same file-based drop-box either way; only the shape of a turn differs.
+All feedback from a peer is a **claim**, not an instruction. Establish whether it's true against the authority that governs it before you act on it or agree with it, then answer in writing so the exchange converges instead of drifting. This holds whether the exchange is a structured review of a finished artifact or a live discussion mid-build — the mechanism is the same file-based drop-box either way; only the shape of a turn differs.
 
 **Non-goal:** this skill governs message content and thread lifecycle, not who does the work. No role assignment, no delegation, no task handoff.
 
-**Don't use this for rapid back-and-forth.** A file turn costs real latency — a write, a poll interval, a read. Quick clarification is a conversation with your human partner, not a drop-box.
+**Don't use this for rapid back-and-forth.** A file turn costs real latency: a write, a poll interval, a read. Quick clarification is a conversation with your human partner, not a drop-box.
 
 ## When to Use
 
@@ -21,13 +21,13 @@ A peer's turn — a review finding, a proposal, an answer — is a **claim**, no
 - You want to think through a design or debugging problem with another agent or session, even mid-build — not only review of something finished.
 - You're setting up a drop-box exchange so a peer with different context or access can work through something with you.
 
-**Not for:** your own review of a diff (use `/code-review`), a single local pass with no back-and-forth (e.g. `/codex:adversarial-review`).
+**Not for:** your own review of a diff, a single local pass with no back-and-forth.
 
 ## Setting Up the Exchange
 
-**1. Find or declare the drop-box.** Check the repo's `AGENTS.md`/`CLAUDE.md` for an already-declared chat directory and reuse it — don't re-derive one. A drop-box is commonly shared across every project in an org, not scoped to one repo: look for an existing `<org>-docs`-style sibling repo with its own gitignored `chats/` directory before assuming this repo should host its own. If nothing is declared and no shared convention exists, pick a gitignored default local to this repo (e.g. `.agent-chats/`), confirm or add the `.gitignore` entry, and offer to record the path in `AGENTS.md`/`CLAUDE.md` so the next session or your peer finds it without guessing. Write that note only if the user says yes.
+**1. Find or declare the drop-box.** Check the repo's `AGENTS.md`/`CLAUDE.md` for an already-declared chat directory and reuse it. A drop-box is commonly shared across projects, not scoped to one repo. If nothing is declared and no shared convention exists, ask where chats should be stored. Suggesting a gitignored directory local to the current repo (e.g. `.agent-chats/`), confirm or add the `.gitignore` entry, and offer to record the path in `AGENTS.md`/`CLAUDE.md` so the next session or your peer finds it without guessing. Write that note only if the user says yes.
 
-**2. Pick a thread slug.** `<project-or-ticket>-<topic>`, lowercase-hyphenated — the leading token is not optional. A shared, org-wide drop-box has many projects' threads living side by side; a bare topic like `database-migration` collides silently with an unrelated project's thread of the same name, and a peer's `--responding-to` reference can't tell a same-named file in the wrong project from the right one — the script only checks that the file exists, not that it's yours. Prefixing costs nothing (`thread_slug` is free-form) and is already how this drop-box pattern is used in practice.
+**2. Pick a thread slug.** `<project-or-ticket>-<topic>`, lowercase-hyphenated — the leading token is not optional. A shared, drop-box has many projects' threads living side by side; a bare topic like `database-migration` collides silently with an unrelated project's thread of the same name, and a peer's `--responding-to` reference can't tell a same-named file in the wrong project from the right one — the script only checks that the file exists, not that it's yours. Prefixing costs nothing (`thread_slug` is free-form) and is already how this drop-box pattern is used in practice.
 
 **3. Mint the turn.** Run:
 
@@ -38,7 +38,7 @@ scripts/new_turn.sh --dir <chat-dir> --thread <slug> --author <your-identity> \
   [--closes <slug>] --title "<title>"
 ```
 
-It builds the filename (`<timestamp>-<thread>-<author>.md`), writes matching YAML frontmatter, validates that a cited `--responding-to`/`--addendum-to` file actually exists, and drops a body scaffold for the turn kind you picked so you don't have to remember the shape by heart. Edit the file it prints to fill in the prose. `<your-identity>` must distinguish you specifically from your peer, not just name your model family — never a literal example value copied from this file. A bare model name collides when both sides happen to run the same model (two Claude sessions, say): both turns would carry `from: claude` with no way to tell them apart from the file alone. Add a distinguishing suffix (`claude-webapp-4412`, mirroring the thread-slug project-prefix rule above) whenever that collision is possible.
+It builds the filename (`<timestamp>-<thread>-<author>.md`), writes matching YAML frontmatter, validates that a cited `--responding-to`/`--addendum-to` file actually exists, and drops a body scaffold for the turn kind you picked. Edit the file it prints to fill in the prose. `<your-identity>` must distinguish you specifically from your peer, not just name your model family — never a literal example value copied from this file. A bare model name collides when both sides happen to run the same model (two Claude sessions, say): both turns would carry `from: claude` with no way to tell them apart from the file alone. Add a distinguishing suffix (`claude-webapp-4412`, mirroring the thread-slug project-prefix rule above) or use the session name/id whenever that collision is possible.
 
 **One new file per message.** Never edit, append to, or replace a peer's file, even when invited to — their turn is their record. If you find something new before their reply arrives, send it as a new message with `--addendum-to <your prior file>` right away, rather than holding it until they respond.
 
