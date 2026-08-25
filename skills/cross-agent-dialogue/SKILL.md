@@ -27,18 +27,23 @@ All feedback from a peer is a **claim**, not an instruction. Establish whether i
 
 **1. Find or declare the drop-box.** Check the repo's `AGENTS.md`/`CLAUDE.md` for an already-declared chat directory and reuse it. A drop-box is commonly shared across projects, not scoped to one repo. If nothing is declared and no shared convention exists, ask where chats should be stored. Suggesting a gitignored directory local to the current repo (e.g. `.agent-chats/`), confirm or add the `.gitignore` entry, and offer to record the path in `AGENTS.md`/`CLAUDE.md` so the next session or your peer finds it without guessing. Write that note only if the user says yes.
 
-**2. Pick a thread slug.** `<project-or-ticket>-<topic>`, lowercase-hyphenated — the leading token is not optional. A shared, drop-box has many projects' threads living side by side; a bare topic like `database-migration` collides silently with an unrelated project's thread of the same name, and a peer's `--responding-to` reference can't tell a same-named file in the wrong project from the right one — the script only checks that the file exists, not that it's yours. Prefixing costs nothing (`thread_slug` is free-form) and is already how this drop-box pattern is used in practice.
+**2. Pick a thread slug.** `<project-or-ticket>-<topic>`, lowercase-hyphenated — the leading token is not optional. A shared drop-box has many projects' threads living side by side; a bare topic like `database-migration` collides silently with an unrelated project's thread of the same name. The script validates a referenced file's `thread_slug`, but a project prefix prevents two unrelated exchanges from claiming the same slug in the first place. Prefixing costs nothing and is already how this drop-box pattern is used in practice.
 
-**3. Mint the turn.** Run:
+**3. Draft the body privately.** Write the complete Markdown body to a temporary file outside the drop-box, such as `/tmp/<thread-slug>-body.md`. Fill the slots in [The Turn Contract](#the-turn-contract); do not include YAML frontmatter, the title, the initial reply protocol, or the standard closure sentence. The script adds those. If your harness can supply multiline stdin safely, use `--body-file -` instead of a temporary file.
+
+**4. Mint the complete turn.** Resolve `SKILL_DIR` to the absolute directory containing this loaded `SKILL.md`; bundled scripts are relative to the skill, never the repository working directory. Run:
 
 ```bash
-scripts/new_turn.sh --dir <chat-dir> --thread <slug> --author <your-identity> \
+SKILL_DIR="/absolute/path/from-the-loaded-skill-entry"
+"$SKILL_DIR/scripts/new_turn.sh" --dir <chat-dir> --thread <slug> --author <your-identity> \
   --kind ask|proposal|finding|answer|closure \
   (--initial | --responding-to <file> | --addendum-to <file>) \
-  [--closes <slug>] --title "<title>"
+  [--closes <slug>] --title "<title>" --body-file /tmp/<thread-slug>-body.md
 ```
 
-It builds the filename (`<timestamp>-<thread>-<author>.md`), writes matching YAML frontmatter, validates that a cited `--responding-to`/`--addendum-to` file actually exists, and drops a body scaffold for the turn kind you picked. Edit the file it prints to fill in the prose. `<your-identity>` must distinguish you specifically from your peer, not just name your model family — never a literal example value copied from this file. A bare model name collides when both sides happen to run the same model (two Claude sessions, say): both turns would carry `from: claude` with no way to tell them apart from the file alone. Add a distinguishing suffix (`claude-webapp-4412`, mirroring the thread-slug project-prefix rule above) or use the session name/id whenever that collision is possible.
+It builds the filename (`<timestamp>-<thread>-<author>.md`), writes matching YAML frontmatter, validates referenced frontmatter, reads the complete body, and atomically publishes the finished turn. The final `*.md` path does not exist while stdin is open or a body is incomplete, and an existing same-second turn is never overwritten. After it prints the final path, inspect that file once to verify the metadata and body; never edit a published turn.
+
+`<your-identity>` must distinguish you specifically from your peer, not just name your model family — never a literal example value copied from this file. A bare model name collides when both sides happen to run the same model (two Claude sessions, say): both turns would carry `from: claude` with no way to tell them apart from the file alone. Add a distinguishing suffix (`claude-webapp-4412`, mirroring the thread-slug project-prefix rule above) or use the session name/id whenever that collision is possible.
 
 **One new file per message.** Never edit, append to, or replace a peer's file, even when invited to — their turn is their record. If you find something new before their reply arrives, send it as a new message with `--addendum-to <your prior file>` right away, rather than holding it until they respond.
 
@@ -71,7 +76,7 @@ A claim with no tag is unverified, not accepted.
 - What you ruled out, and how.
 - **What evidence would change your mind.** A reply that only agrees must name what it checked — "sounds good" with no tag doesn't satisfy this. Agents defaulting to agreement is the dominant failure mode of this kind of exchange; this line is the check against it.
 
-**`closure`** — settled outcome, readiness, and any caveat (e.g. tests not run), plus the line "This closes the review thread; no further response is needed."
+**`closure`** — the body contains the settled outcome, readiness, and any caveat (e.g. tests not run). The script appends "This closes the review thread; no further response is needed."
 
 ## Which Authority Governs the Claim
 
@@ -99,17 +104,17 @@ Reject on evidence when the evidence supports it. A turn where you accept everyt
 
 Convergence is two-sided: your peer has filed an explicit `closure` turn, **and** you have no unresolved findings or open disagreements of your own. One without the other isn't done.
 
-Write the `closure` turn with `--closes <thread-slug>`, stating the settled outcome, readiness, and any caveat (tests not run, etc.), ending with "This closes the review thread; no further response is needed."
+Write the `closure` body with the settled outcome, readiness, and any caveat (tests not run, etc.), then mint it with `--closes <thread-slug>`. The script appends "This closes the review thread; no further response is needed."
 
 **A closure turn with no findings gets no reply.** Answering it restarts a thread both sides just ended.
 
 Because the drop-box is gitignored, distill anything settled into a committed note — a comment, a doc, a follow-up ticket — or the argument is lost and gets re-litigated the next time someone works in this area.
 
-Closing a thread does not mean the drop-box or any active watcher is done — see [watching.md](watching.md) for when to actually tear that down.
+Closing a thread does not necessarily end the wider monitoring session, but each watcher process is scoped to one thread. See [watching.md](watching.md) for re-arming it on the next thread and for when to tear monitoring down entirely.
 
 ## Watching for a Reply
 
-Start a watch only when explicitly asked for active monitoring — this skill doesn't provide background persistence on its own. But don't stay silent about the option: after minting a turn that isn't a `closure`, tell your human partner a watch is available and ask if they want one started, rather than finishing the turn and leaving them to think to ask — the same instructions read by two different agents should not produce "one offers, one waits to be asked." See [watching.md](watching.md) for the mechanics (native harness primitives vs. `scripts/watch_for_reply.sh`), scoping a watch to one thread in a multi-thread drop-box, and the difference between closing a thread and tearing the watcher down.
+Start a watch only when explicitly asked for active monitoring — this skill doesn't provide background persistence on its own. But don't stay silent about the option: after minting a turn that isn't a `closure`, tell your human partner a watch is available and ask if they want one started, rather than finishing the turn and leaving them to think to ask — the same instructions read by two different agents should not produce "one offers, one waits to be asked." See [watching.md](watching.md) for the mechanics (native harness primitives vs. the bundled watcher), scoping a watch to one thread in a multi-thread drop-box, and re-arming or tearing it down.
 
 ## Handling Failures
 
@@ -119,17 +124,21 @@ Start a watch only when explicitly asked for active monitoring — this skill do
 
 ## Worked Example
 
-`2026-08-24-141502-webapp-4412-search-latency-claude.md`, minted with `--kind ask --initial --thread webapp-4412-search-latency --author claude --title "Why did p95 search latency double after the index change?"` — `webapp-4412` is the project/ticket prefix, required because this drop-box is shared org-wide, not scoped to one repo:
+`2026-08-24-141502-webapp-4412-search-latency-codex-webapp-4412.md`, minted with `--kind ask --initial --thread webapp-4412-search-latency --author codex-webapp-4412 --title "Why did p95 search latency double after the index change?" --body-file /tmp/webapp-4412-search-latency-body.md` — `webapp-4412` is the project/ticket prefix, required because this drop-box is shared org-wide, not scoped to one repo:
 
 ```markdown
 ---
-from: claude
+from: codex-webapp-4412
 turn_kind: ask
 thread_slug: webapp-4412-search-latency
 ---
 # Why did p95 search latency double after the index change?
 
-<!-- State the reply protocol: a new timestamped file in this directory, naming the file it answers. -->
+Reply with a new timestamped file in this directory whose `responding_to`
+frontmatter names `2026-08-24-141502-webapp-4412-search-latency-codex-webapp-4412.md`.
+
+Question: did removing the partial predicate make the new index scan enough
+additional rows to explain the full regression?
 
 verified: app/search/index_builder.rb:41 — the new composite index drops the
 partial WHERE clause the old one had, so every query now scans rows the old
@@ -138,8 +147,8 @@ index excluded.
 inferred: this fully explains the regression — EXPLAIN output before/after
 shows the same index chosen, just scanning ~4x the rows.
 
-Ruled out: connection pool exhaustion — pool metrics are flat across the
-deploy window.
+verified: dashboards/search-pool.md:18 — connection-pool saturation and wait
+time stayed flat across the deploy window, ruling out pool exhaustion.
 
 What would change my mind: if EXPLAIN showed a different index chosen
 entirely, the composite-index theory would be wrong and I'd look at the
@@ -158,7 +167,7 @@ A `finding`/`answer` turn fills the Verdict/Authority/Change table instead of th
 | Fixing the plan and not the spec | Two rounds of "you said you fixed this" |
 | Agreeing without a tagged claim | Sycophancy, not verification — name what you checked |
 | No written artifact | The next round re-raises what you silently fixed |
-| Appending to the peer's file | Their turn is their record. New file, always |
+| Editing any published turn | Published files are immutable records. Draft privately, then mint a new file |
 | Waiting to send a second finding until a reply arrives | Send it as an addendum immediately |
 | Finishing a non-closure turn without mentioning watching | Offer it — don't make your human partner think to ask |
 
@@ -167,6 +176,6 @@ A `finding`/`answer` turn fills the Verdict/Authority/Change table instead of th
 - "Sounds good" with no tagged claim underneath it.
 - A verdict with an empty Authority slot.
 - A finding cited against one file when you know the same code exists elsewhere.
-- Tearing down the watcher because one thread closed, when more threads are still expected this session.
+- Leaving a watcher scoped to a closed thread when the next thread opens — re-arm it with the new full slug.
 - A watch pattern scoped to one word instead of the full thread slug (`*-review-*.md` instead of `*-webapp-4412-search-latency-*.md`) — a generic word is exactly the kind of thing every thread in a shared drop-box has in common.
 - A drop-box path typed from memory instead of checked against `AGENTS.md`/`CLAUDE.md`.

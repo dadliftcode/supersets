@@ -34,10 +34,11 @@ A third thing bites specifically in a drop-box transitioning between naming conv
 Run:
 
 ```bash
-scripts/watch_for_reply.sh <chat-dir> [poll-seconds] '*-<thread-slug>-*.md' --exclude '*-<your-identity>.md'
+SKILL_DIR="/absolute/path/from-the-loaded-skill-entry"
+"$SKILL_DIR/scripts/watch_for_reply.sh" <chat-dir> [poll-seconds] '*-<thread-slug>-*.md' --exclude '*-<your-identity>.md'
 ```
 
-Defaults to a 15s poll. Keep the watcher process alive and check in on it no less often than every 60s; give concise updates to your human partner while waiting. Always scope the pattern to your full thread slug, not a generic word — a shared, org-wide drop-box is the common case, not the exception, and an unscoped or under-scoped pattern wakes on every unrelated project's turns too.
+`SKILL_DIR` is the absolute directory containing the loaded `SKILL.md`, not the repository working directory. The script defaults to a 15s poll. Keep the watcher process alive and check in on it no less often than every 60s; give concise updates to your human partner while waiting. Always scope the pattern to your full thread slug, not a generic word — a shared, org-wide drop-box is the common case, not the exception, and an unscoped or under-scoped pattern wakes on every unrelated project's turns too.
 
 ## When the watcher reports a change
 
@@ -45,9 +46,9 @@ Inspect it — read the `thread_slug:` frontmatter, don't just trust that the fi
 
 ## Closing a thread vs. tearing down the watcher
 
-These are not the same event. **Closing a thread** — see SKILL.md's "Closing a Thread" — ends one topic. A long session can run many threads in sequence on one still-live watcher: closing thread 3 cleanly and opening thread 4 right after, on the same watcher, without tearing anything down, is normal and correct.
+These are not the same event. **Closing a thread** — see SKILL.md's "Closing a Thread" — ends one topic. Each watcher process has a fixed thread pattern, so it cannot follow a later thread automatically. When another thread starts, stop the old process or monitor and re-arm a new one with the new full thread slug after the outbound turn is complete. Reusing the old watcher silently misses the new thread.
 
-**Tearing down the watcher** happens only when no further threads are expected for the rest of the session:
+**Tearing down the monitoring session** happens only when no further threads are expected for the rest of the session. With native monitor/wakeup primitives:
 
 1. `ScheduleWakeup` with `stop: true` first. Check the result — it reports how many pending wakeups it cancelled.
 2. `TaskStop` the monitor.
@@ -55,7 +56,9 @@ These are not the same event. **Closing a thread** — see SKILL.md's "Closing a
 
 **Wakeup first, always.** Reversing the order corrupts what you believe about the conversation: an orphaned wakeup re-invokes you with the original prompt verbatim, indistinguishable from your human partner asking again. You'll conclude they asked you to keep watching, re-arm a monitor *and* a fresh wakeup, and report the resurrection back to them as their own request. If a wakeup fires after you believed watching was done, suspect your own timer before assuming a new request.
 
-If asked to watch again after a thread closed, re-arm, but say plainly that nothing will arrive unless your peer is prompted afresh — a live watcher over closed threads looks identical to work in progress, and silence gets read as a stall.
+With the bundled watcher, terminate its process or harness execution session, confirm that it exited, then state plainly that watching has stopped. There is no separate wakeup to cancel.
+
+If asked to watch again after a thread closed, re-arm with the new thread's full slug, but say plainly that nothing will arrive unless your peer is prompted afresh — a live watcher over closed threads looks identical to work in progress, and silence gets read as a stall.
 
 ## Failure handling
 

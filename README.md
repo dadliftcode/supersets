@@ -71,7 +71,7 @@ claude plugin validate . --strict
 
 python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/plugin-creator/scripts/validate_plugin.py" .
 
-node --test tests/opencode-plugin.test.mjs
+node --test tests/*.test.mjs
 ```
 
 Before tagging a release, smoke-test the checkout through both real hosts
@@ -91,7 +91,10 @@ and OpenCode:
    without erasing history. Exercise the PR-description skill on a branch
    that is ready to open: with a repo template, and in a repo that has none
    (sample recent PRs, write this description, offer a template, do not
-   write the template file unless asked).
+   write the template file unless asked). Exercise the cross-agent-dialogue
+   skill with a temporary drop-box: mint a complete initial turn, reject a
+   cross-thread response, watch for its reply, then re-arm the watcher for a
+   second thread.
 
 ## Releases
 
