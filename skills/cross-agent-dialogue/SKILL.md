@@ -25,9 +25,9 @@ A peer's turn — a review finding, a proposal, an answer — is a **claim**, no
 
 ## Setting Up the Exchange
 
-**1. Find or declare the drop-box.** Check the repo's `AGENTS.md`/`CLAUDE.md` for an already-declared chat directory and reuse it — don't re-derive one. If none is declared but the directory already exists on disk, reuse that. Otherwise pick a gitignored default (e.g. `.agent-chats/`), confirm or add the `.gitignore` entry, and offer to record the path in `AGENTS.md`/`CLAUDE.md` so the next session or your peer finds it without guessing. Write that note only if the user says yes.
+**1. Find or declare the drop-box.** Check the repo's `AGENTS.md`/`CLAUDE.md` for an already-declared chat directory and reuse it — don't re-derive one. A drop-box is commonly shared across every project in an org, not scoped to one repo: look for an existing `<org>-docs`-style sibling repo with its own gitignored `chats/` directory before assuming this repo should host its own. If nothing is declared and no shared convention exists, pick a gitignored default local to this repo (e.g. `.agent-chats/`), confirm or add the `.gitignore` entry, and offer to record the path in `AGENTS.md`/`CLAUDE.md` so the next session or your peer finds it without guessing. Write that note only if the user says yes.
 
-**2. Pick a thread slug.** Short, descriptive, lowercase-hyphenated, unique enough not to collide with other threads already live in the same drop-box — the drop-box is shared across every exchange in the project, not just yours.
+**2. Pick a thread slug.** `<project-or-ticket>-<topic>`, lowercase-hyphenated — the leading token is not optional. A shared, org-wide drop-box has many projects' threads living side by side; a bare topic like `database-migration` collides silently with an unrelated project's thread of the same name, and a peer's `--responding-to` reference can't tell a same-named file in the wrong project from the right one — the script only checks that the file exists, not that it's yours. Prefixing costs nothing (`thread_slug` is free-form) and is already how this drop-box pattern is used in practice.
 
 **3. Mint the turn.** Run:
 
@@ -119,13 +119,13 @@ Start a watch only when explicitly asked for active monitoring — this skill do
 
 ## Worked Example
 
-`2026-08-24-141502-search-latency-claude.md`, minted with `--kind ask --initial --thread search-latency --author claude --title "Why did p95 search latency double after the index change?"`:
+`2026-08-24-141502-webapp-4412-search-latency-claude.md`, minted with `--kind ask --initial --thread webapp-4412-search-latency --author claude --title "Why did p95 search latency double after the index change?"` — `webapp-4412` is the project/ticket prefix, required because this drop-box is shared org-wide, not scoped to one repo:
 
 ```markdown
 ---
 from: claude
 turn_kind: ask
-thread_slug: search-latency
+thread_slug: webapp-4412-search-latency
 ---
 # Why did p95 search latency double after the index change?
 
@@ -167,4 +167,5 @@ A `finding`/`answer` turn fills the Verdict/Authority/Change table instead of th
 - A verdict with an empty Authority slot.
 - A finding cited against one file when you know the same code exists elsewhere.
 - Tearing down the watcher because one thread closed, when more threads are still expected this session.
+- A watch pattern scoped to one word instead of the full thread slug (`*-review-*.md` instead of `*-webapp-4412-search-latency-*.md`) — a generic word is exactly the kind of thing every thread in a shared drop-box has in common.
 - A drop-box path typed from memory instead of checked against `AGENTS.md`/`CLAUDE.md`.

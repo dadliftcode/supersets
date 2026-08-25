@@ -35,7 +35,7 @@ Run:
 scripts/watch_for_reply.sh <chat-dir> [poll-seconds] '*-<thread-slug>-*.md' --exclude '*-<your-identity>.md'
 ```
 
-Defaults to a 15s poll. Keep the watcher process alive and check in on it no less often than every 60s; give concise updates to your human partner while waiting. Scope the pattern to your thread slug whenever the drop-box has concurrent unrelated threads live — otherwise you'll wake on every turn in the directory, not just yours.
+Defaults to a 15s poll. Keep the watcher process alive and check in on it no less often than every 60s; give concise updates to your human partner while waiting. Always scope the pattern to your full thread slug, not a generic word — a shared, org-wide drop-box is the common case, not the exception, and an unscoped or under-scoped pattern wakes on every unrelated project's turns too.
 
 ## When the watcher reports a change
 
