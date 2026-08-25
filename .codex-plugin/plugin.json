@@ -1,6 +1,6 @@
 {
   "name": "supersets",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Battle-tested agent skills for strong software engineering.",
   "author": {
     "name": "Rami Massoud",
@@ -13,7 +13,9 @@
     "agent-skills",
     "software-engineering",
     "architecture",
-    "git"
+    "git",
+    "code-review",
+    "pair-programming"
   ],
   "skills": "./skills/",
   "interface": {
